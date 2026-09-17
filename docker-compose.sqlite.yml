@@ -64,7 +64,7 @@ services:
       start_period: 10s
 
 volumes:
-  backend_:
+  backend_data:
     driver: local
   backend_uploads:
     driver: local

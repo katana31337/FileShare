@@ -72,7 +72,7 @@ services:
     container_name: quickshare-db
     restart: unless-stopped
     volumes:
-      - mongo_/data/db
+      - mongo_data:/data/db
     networks:
       - quickshare_net
     healthcheck:
@@ -82,7 +82,7 @@ services:
       retries: 5
 
 volumes:
-  mongo_
+  mongo_data:
     driver: local
   backend_uploads:
     driver: local

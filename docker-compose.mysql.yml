@@ -81,7 +81,7 @@ services:
       - MYSQL_USER=quickshare
       - MYSQL_PASSWORD=${DB_PASSWORD:-quickshare_pass}
     volumes:
-      - mysql_/var/lib/mysql
+      - mysql_data:/var/lib/mysql
     networks:
       - quickshare_net
     healthcheck:
@@ -91,7 +91,7 @@ services:
       retries: 10
 
 volumes:
-  mysql_
+  mysql_data:
     driver: local
   backend_uploads:
     driver: local
