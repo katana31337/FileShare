@@ -92,7 +92,10 @@
 │
 ├── scripts/
 │   ├── setup-letsencrypt.sh      # Let's Encrypt SSL
-│   └── setup-selfsigned.sh       # Self-signed SSL
+│   ├── setup-selfsigned.sh       # Self-signed SSL
+│   ├── cleanup.sh                # Полная очистка (с опциями)
+│   ├── cleanup-fast.sh           # Быстрая очистка (без подтверждений)
+│   └── cleanup.bat               # Очистка для Windows
 │
 ├── Dockerfile.frontend           # Frontend: Nginx + React
 ├── Dockerfile.backend            # Backend: Node.js + Express
@@ -141,6 +144,45 @@ npm run dev
 ```
 
 Frontend автоматически проксирует `/api` запросы на backend через Vite dev server.
+
+## 🧹 Скрипты очистки
+
+### Полная очистка (Linux/macOS)
+
+```bash
+# Сделать скрипт исполняемым
+chmod +x scripts/cleanup.sh
+
+# Остановить и удалить контейнеры
+./scripts/cleanup.sh
+
+# Полная очистка (контейнеры + volumes + images)
+./scripts/cleanup.sh --all
+
+# Быстрое удаление без подтверждений
+./scripts/cleanup.sh --force
+```
+
+### Быстрая очистка (Linux/macOS)
+
+```bash
+chmod +x scripts/cleanup-fast.sh
+./scripts/cleanup-fast.sh
+```
+
+### Очистка для Windows
+
+```cmd
+scripts\cleanup.bat
+```
+
+### Опции скрипта cleanup.sh
+
+| Опция | Описание |
+|-------|----------|
+| `--force`, `-f` | Принудительное удаление без подтверждений |
+| `--all`, `-a` | Удалить контейнеры + volumes + images |
+| `--help`, `-h` | Показать справку |
 
 ## 🔐 HTTPS / SSL
 
