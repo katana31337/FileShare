@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { ShareDownload } from '../types';
 import { shareService } from '../services/shareService';
+import { ConnectionBanner } from './ConnectionBanner';
+import { useConnectionStatus } from '../hooks/useConnectionStatus';
 
 interface DownloadPageProps {
   shareId: string;
@@ -12,6 +14,7 @@ export const DownloadPage: React.FC<DownloadPageProps> = ({ shareId }) => {
   const [shareData, setShareData] = useState<ShareDownload | null>(null);
   const [password, setPassword] = useState('');
   const [needsPassword, setNeedsPassword] = useState(false);
+  const { isDisconnected } = useConnectionStatus();
 
   useEffect(() => {
     loadShare();
@@ -69,6 +72,7 @@ export const DownloadPage: React.FC<DownloadPageProps> = ({ shareId }) => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
+        <ConnectionBanner />
         <div className="text-center">
           <div className="w-16 h-16 mx-auto rounded-full bg-purple-500/20 flex items-center justify-center mb-4 animate-pulse">
             <svg className="w-8 h-8 text-purple-400 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -85,6 +89,7 @@ export const DownloadPage: React.FC<DownloadPageProps> = ({ shareId }) => {
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center">
+        <ConnectionBanner />
         <div className="text-center max-w-md mx-auto px-4">
           <div className="w-20 h-20 mx-auto rounded-full bg-red-500/20 flex items-center justify-center mb-4">
             <svg className="w-10 h-10 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -93,6 +98,11 @@ export const DownloadPage: React.FC<DownloadPageProps> = ({ shareId }) => {
           </div>
           <h2 className="text-2xl font-bold text-white mb-2">Ошибка</h2>
           <p className="text-gray-400">{error}</p>
+          {isDisconnected && (
+            <p className="text-yellow-400 text-sm mt-2">
+              Сервер недоступен. Попробуйте позже.
+            </p>
+          )}
           <a
             href="/"
             className="inline-block mt-6 px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-xl transition-colors"
@@ -146,6 +156,7 @@ export const DownloadPage: React.FC<DownloadPageProps> = ({ shareId }) => {
 
   return (
     <div className="min-h-screen flex items-center justify-center">
+      <ConnectionBanner />
       <div className="max-w-lg mx-auto px-4 w-full">
         <div className="text-center mb-6">
           <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center mb-4 shadow-lg shadow-purple-500/20">

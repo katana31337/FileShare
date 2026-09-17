@@ -7,8 +7,10 @@ import { DownloadPage } from './components/DownloadPage';
 import { ShareHistory, useShareHistory } from './components/ShareHistory';
 import { AdminPanel } from './components/admin/AdminPanel';
 import { AdminLogin } from './components/admin/AdminLogin';
+import { ConnectionBanner } from './components/ConnectionBanner';
 import { shareService } from './services/shareService';
 import { adminApi } from './services/adminApi';
+import { useConnectionStatus } from './hooks/useConnectionStatus';
 import { ShareCreateResponse, ShareType } from './types';
 
 type AppState = 'home' | 'result' | 'download' | 'admin-login' | 'admin-panel';
@@ -33,8 +35,9 @@ function App() {
     maxDownloads: 0,
     password: '',
   });
-  const [isServerOnline, setIsServerOnline] = useState<boolean | null>(null);
   const { addToHistory } = useShareHistory();
+  const { status, isConnected, isDisconnected, isDegraded } = useConnectionStatus();
+  const isServerOnline = isConnected;
   const [siteConfig, setSiteConfig] = useState<SiteConfig>({
     name: 'QuickShare',
     description: 'Анонимный обмен файлами и текстом',
@@ -62,11 +65,6 @@ function App() {
       }
       return;
     }
-
-    // Check server health
-    shareService.checkHealth().then((online) => {
-      setIsServerOnline(online);
-    });
 
     // Load site config from server
     loadSiteConfig();
@@ -189,6 +187,9 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-900 relative overflow-hidden">
+      {/* Connection Banner */}
+      <ConnectionBanner />
+
       {/* Background effects */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl" />
@@ -215,16 +216,18 @@ function App() {
 
           <div className="flex items-center gap-3">
             <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs ${
-              isServerOnline === true
+              isConnected
                 ? 'bg-green-500/10 text-green-400 border border-green-500/20'
-                : isServerOnline === false
+                : isDegraded
                   ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20'
-                  : 'bg-gray-500/10 text-gray-400 border border-gray-500/20'
+                  : isDisconnected
+                    ? 'bg-red-500/10 text-red-400 border border-red-500/20'
+                    : 'bg-gray-500/10 text-gray-400 border border-gray-500/20'
             }`}>
               <div className={`w-2 h-2 rounded-full ${
-                isServerOnline === true ? 'bg-green-400 animate-pulse' : isServerOnline === false ? 'bg-yellow-400' : 'bg-gray-400'
+                isConnected ? 'bg-green-400 animate-pulse' : isDegraded ? 'bg-yellow-400 animate-pulse' : isDisconnected ? 'bg-red-400' : 'bg-gray-400'
               }`} />
-              {isServerOnline === true ? 'Сервер онлайн' : isServerOnline === false ? 'Локальный режим' : 'Проверка...'}
+              {isConnected ? 'Сервер онлайн' : isDegraded ? 'Проблемы' : isDisconnected ? 'Оффлайн' : 'Проверка...'}
             </div>
 
             {/* Admin button */}
@@ -346,6 +349,37 @@ function App() {
 
             {/* History */}
             <ShareHistory />
+
+            {/* Offline notice */}
+            {isDisconnected && (
+              <div className="mt-6 bg-yellow-500/10 border border-yellow-500/30 rounded-2xl p-5">
+                <div className="flex items-start gap-3">
+                  <div className="text-2xl">⚠️</div>
+                  <div>
+                    <h3 className="text-yellow-400 font-medium mb-1">Локальный режим</h3>
+                    <p className="text-yellow-200/70 text-sm">
+                      Сервер недоступен. Вы можете создавать ссылки, но они будут работать только в этом браузере.
+                      Ссылки не будут доступны другим пользователям. Когда сервер станет доступен, баннер исчезнет автоматически.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Degraded mode notice */}
+            {isDegraded && (
+              <div className="mt-6 bg-orange-500/10 border border-orange-500/30 rounded-2xl p-5">
+                <div className="flex items-start gap-3">
+                  <div className="text-2xl">🔶</div>
+                  <div>
+                    <h3 className="text-orange-400 font-medium mb-1">Ограниченный режим</h3>
+                    <p className="text-orange-200/70 text-sm">
+                      Сервер работает, но наблюдаются проблемы с базой данных. Некоторые функции могут быть недоступны.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Features */}
             <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
