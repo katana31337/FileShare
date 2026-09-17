@@ -421,6 +421,12 @@ EOF
       - backend_uploads:/app/data/uploads
 EOF
 
+  if [ "$DB_TYPE" = "sqlite" ]; then
+    cat >> docker-compose.yml << EOF
+      - backend_:/app/data
+EOF
+  fi
+
   if [ "$SSL_ENABLED" = true ]; then
     cat >> docker-compose.yml << EOF
       - ./certs:/app/certs:ro
@@ -464,7 +470,7 @@ EOF
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
     volumes:
-      - postgres_/var/lib/postgresql/data
+      - postgres_:/var/lib/postgresql/data
     networks:
       - quickshare_net
     healthcheck:
@@ -481,7 +487,7 @@ EOF
       - MYSQL_USER=${DB_USER}
       - MYSQL_PASSWORD=${DB_PASSWORD}
     volumes:
-      - mysql_/var/lib/mysql
+      - mysql_:/var/lib/mysql
     networks:
       - quickshare_net
     healthcheck:
@@ -493,7 +499,7 @@ EOF
     elif [ "$DB_TYPE" = "mongodb" ]; then
       cat >> docker-compose.yml << EOF
     volumes:
-      - mongo_/data/db
+      - mongo_:/data/db
     networks:
       - quickshare_net
     healthcheck:
@@ -513,22 +519,22 @@ EOF
 
   if [ "$DB_TYPE" = "postgres" ]; then
     cat >> docker-compose.yml << EOF
-  postgres_
+  postgres_:
     driver: local
 EOF
   elif [ "$DB_TYPE" = "mysql" ]; then
     cat >> docker-compose.yml << EOF
-  mysql_
+  mysql_:
     driver: local
 EOF
   elif [ "$DB_TYPE" = "mongodb" ]; then
     cat >> docker-compose.yml << EOF
-  mongo_
+  mongo_:
     driver: local
 EOF
   elif [ "$DB_TYPE" = "sqlite" ]; then
     cat >> docker-compose.yml << EOF
-  backend_
+  backend_:
     driver: local
 EOF
   fi
