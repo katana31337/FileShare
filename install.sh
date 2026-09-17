@@ -569,8 +569,9 @@ start_installation() {
   
   # Очистка кэша Docker для старых образов
   echo -e "${YELLOW}🧹 Очистка кэша Docker...${NC}"
-  docker compose down --rmi local 2>/dev/null || true
-  docker builder prune -f 2>/dev/null || true
+  docker compose down --rmi local --volumes 2>/dev/null || true
+  docker builder prune -af 2>/dev/null || true
+  docker system prune -f 2>/dev/null || true
   echo ""
   
   # Build backend first
