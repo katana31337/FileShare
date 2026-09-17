@@ -77,11 +77,11 @@
 ### Docker (рекомендуется):
 
 ```bash
-# SQLite (по умолчанию)
+# PostgreSQL (по умолчанию)
 docker compose up -d
 
-# PostgreSQL
-docker compose -f docker-compose.postgres.yml up -d
+# SQLite
+docker compose -f docker-compose.sqlite.yml up -d
 
 # MySQL
 docker compose -f docker-compose.mysql.yml up -d
@@ -199,11 +199,11 @@ chmod +x scripts/setup-letsencrypt.sh
 ## 🐳 Docker Compose варианты
 
 ```bash
-# SQLite
+# PostgreSQL (по умолчанию)
 docker compose up -d
 
-# PostgreSQL
-docker compose -f docker-compose.postgres.yml up -d
+# SQLite
+docker compose -f docker-compose.sqlite.yml up -d
 
 # MySQL
 docker compose -f docker-compose.mysql.yml up -d

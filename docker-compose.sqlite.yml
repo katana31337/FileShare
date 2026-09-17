@@ -1,9 +1,9 @@
 # ============================================
-# QuickShare — Docker Compose (PostgreSQL default)
+# QuickShare — Docker Compose (SQLite)
 # ============================================
 # Usage:
-#   docker compose up -d
-#   docker compose down
+#   docker compose -f docker-compose.sqlite.yml up -d
+#   docker compose -f docker-compose.sqlite.yml down
 
 version: '3.8'
 
@@ -18,22 +18,16 @@ services:
       - NODE_ENV=production
       - PORT=3001
       - HOST=0.0.0.0
-      - DB_TYPE=postgres
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_NAME=quickshare
-      - DB_USER=quickshare
-      - DB_PASSWORD=${DB_PASSWORD:-quickshare_pass}
+      - DB_TYPE=sqlite
+      - DB_SQLITE_PATH=/app/data/quickshare.db
       - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
       - CORS_ORIGIN=${CORS_ORIGIN:-*}
       - SSL_CERT=${SSL_CERT:-}
       - SSL_KEY=${SSL_KEY:-}
     volumes:
+      - quickshare_data:/app/data
       - quickshare_uploads:/app/data/uploads
       - ./certs:/app/certs:ro
-    depends_on:
-      postgres:
-        condition: service_healthy
     networks:
       - quickshare_net
     healthcheck:
@@ -43,26 +37,8 @@ services:
       retries: 3
       start_period: 10s
 
-  postgres:
-    image: postgres:16-alpine
-    container_name: quickshare-db
-    restart: unless-stopped
-    environment:
-      - POSTGRES_DB=quickshare
-      - POSTGRES_USER=quickshare
-      - POSTGRES_PASSWORD=${DB_PASSWORD:-quickshare_pass}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - quickshare_net
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U quickshare"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
 volumes:
-  postgres_data:
+  quickshare_data:
     driver: local
   quickshare_uploads:
     driver: local
