@@ -1,0 +1,65 @@
+# ============================================
+# QuickShare — Docker Compose with PostgreSQL
+# ============================================
+# Usage:
+#   docker compose -f docker-compose.postgres.yml up -d
+
+version: '3.8'
+
+services:
+  quickshare:
+    build: .
+    container_name: quickshare
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3001}:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - HOST=0.0.0.0
+      - DB_TYPE=postgres
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=quickshare
+      - DB_USER=quickshare
+      - DB_PASSWORD=${DB_PASSWORD:-quickshare_pass}
+      - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123}
+      - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
+      - CORS_ORIGIN=${CORS_ORIGIN:-*}
+    volumes:
+      - quickshare_uploads:/app/data/uploads
+      - ./certs:/app/certs:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - quickshare_net
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: quickshare-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=quickshare
+      - POSTGRES_USER=quickshare
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-quickshare_pass}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - quickshare_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U quickshare"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+    driver: local
+  quickshare_uploads:
+    driver: local
+
+networks:
+  quickshare_net:
+    driver: bridge
