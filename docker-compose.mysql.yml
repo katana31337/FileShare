@@ -1,0 +1,63 @@
+# ============================================
+# QuickShare — Docker Compose with MySQL
+# ============================================
+version: '3.8'
+
+services:
+  quickshare:
+    build: .
+    container_name: quickshare
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3001}:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - HOST=0.0.0.0
+      - DB_TYPE=mysql
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_NAME=quickshare
+      - DB_USER=quickshare
+      - DB_PASSWORD=${DB_PASSWORD:-quickshare_pass}
+      - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123}
+      - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
+      - CORS_ORIGIN=${CORS_ORIGIN:-*}
+    volumes:
+      - quickshare_uploads:/app/data/uploads
+      - ./certs:/app/certs:ro
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - quickshare_net
+
+  mysql:
+    image: mysql:8
+    container_name: quickshare-db
+    restart: unless-stopped
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD:-rootpass}
+      - MYSQL_DATABASE=quickshare
+      - MYSQL_USER=quickshare
+      - MYSQL_PASSWORD=${DB_PASSWORD:-quickshare_pass}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - quickshare_net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  mysql_data:
+    driver: local
+  quickshare_uploads:
+    driver: local
+
+networks:
+  quickshare_net:
+    driver: bridge

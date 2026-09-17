@@ -1,138 +1,233 @@
-# 🔗 QuickShare — Анонимный обмен файлами и текстом
+# 🔗 QuickShare v2.0 — Анонимный обмен файлами и текстом
 
-Клиент-серверное приложение для анонимного обмена файлами и текстом через короткие ссылки.
+Клиент-серверное приложение для анонимного обмена файлами и текстом через короткие ссылки. Поддерживает любые базы данных, Docker-развёртывание, HTTPS, админ-панель.
 
 ## 🏗️ Архитектура (SOLID)
 
-### Принципы SOLID в проекте:
-
 | Принцип | Реализация |
 |---------|-----------|
-| **S** - Single Responsibility | Каждый сервис отвечает за одну задачу: `DatabaseService`, `FileService`, `ShortLinkService`, `ShareService` |
-| **O** - Open/Closed | Сервисы расширяются через интерфейсы, не модифицируя существующий код |
-| **L** - Liskov Substitution | `ShareService` работает с абстракциями, может использовать любой бэкенд (API/localStorage) |
-| **I** - Interface Segregation | Тонкие интерфейсы: `ShareServiceInterface` определяет только нужные методы |
-| **D** - Dependency Inversion | Frontend зависит от абстракции `shareService`, а не от конкретной реализации |
+| **S** - Single Responsibility | Каждый сервис/адаптер отвечает за одну задачу |
+| **O** - Open/Closed | Новые БД добавляются через адаптеры без изменения кода |
+| **L** - Liskov Substitution | Любой адаптер БД подменяет другой через интерфейс |
+| **I** - Interface Segregation | Тонкие интерфейсы: `IDatabaseAdapter`, `ShareServiceInterface` |
+| **D** - Dependency Inversion | Зависимости от абстракций (интерфейсов), не от реализаций |
 
-### Структура проекта:
+## 📁 Структура проекта
 
 ```
 ├── src/                          # Frontend (React + Vite + Tailwind)
-│   ├── components/               # UI компоненты
-│   │   ├── FileUpload.tsx        # Drag & drop загрузка файлов
-│   │   ├── TextShare.tsx         # Ввод и отправка текста
-│   │   ├── ShareOptions.tsx      # Настройки (срок, лимит, пароль)
-│   │   ├── ShareLink.tsx         # Отображение результата + QR
+│   ├── components/
+│   │   ├── admin/
+│   │   │   ├── AdminPanel.tsx    # Панель управления
+│   │   │   └── AdminLogin.tsx    # Авторизация админа
+│   │   ├── FileUpload.tsx        # Drag & drop загрузка
+│   │   ├── TextShare.tsx         # Ввод текста
+│   │   ├── ShareOptions.tsx      # Настройки шаров
+│   │   ├── ShareLink.tsx         # Результат + QR
+│   │   ├── ShareHistory.tsx      # История ссылок
 │   │   └── DownloadPage.tsx      # Страница скачивания
-│   ├── services/                 # Бизнес-логика
-│   │   ├── api.ts                # HTTP клиент для backend
+│   ├── services/
+│   │   ├── api.ts                # HTTP клиент
 │   │   ├── storage.ts            # localStorage fallback
-│   │   └── shareService.ts       # Оркестратор (API → localStorage)
-│   ├── types/                    # TypeScript типы
-│   │   └── index.ts
-│   ├── App.tsx                   # Главный компонент
-│   └── index.css                 # Стили
+│   │   ├── shareService.ts       # Оркестратор
+│   │   └── adminApi.ts           # API для админки
+│   └── App.tsx                   # Главный компонент
 │
-├── server/                       # Backend (Express + SQLite)
+├── server/                       # Backend (Express + Multi-DB)
 │   ├── src/
 │   │   ├── db/
-│   │   │   └── database.ts       # DatabaseService (SQLite)
-│   │   ├── routes/
-│   │   │   └── shares.ts         # API маршруты
+│   │   │   ├── adapters/
+│   │   │   │   ├── IDatabaseAdapter.ts  # Интерфейс (SOLID-D)
+│   │   │   │   ├── SqliteAdapter.ts     # SQLite
+│   │   │   │   ├── PostgresAdapter.ts   # PostgreSQL
+│   │   │   │   ├── MysqlAdapter.ts      # MySQL/MariaDB
+│   │   │   │   └── MongoAdapter.ts      # MongoDB
+│   │   │   ├── DatabaseFactory.ts       # Фабрика (SOLID-O)
+│   │   │   └── database.ts              # Singleton
 │   │   ├── services/
-│   │   │   ├── ShareService.ts   # Оркестрация шаринга
-│   │   │   ├── FileService.ts    # Работа с файлами
-│   │   │   └── ShortLinkService.ts # Генерация ID
-│   │   └── index.ts              # Точка входа сервера
-│   ├── package.json
-│   └── tsconfig.json
+│   │   │   ├── ShareService.ts          # Оркестрация шаров
+│   │   │   ├── SettingsService.ts       # Настройки из БД
+│   │   │   ├── AuthService.ts           # JWT авторизация
+│   │   │   ├── FileService.ts           # Работа с файлами
+│   │   │   └── ShortLinkService.ts      # Генерация ID
+│   │   ├── routes/
+│   │   │   ├── shares.ts                # API шаров
+│   │   │   └── admin.ts                 # API админки
+│   │   ├── middleware/
+│   │   │   ├── rateLimiter.ts           # Rate limiting
+│   │   │   └── security.ts              # Security headers
+│   │   └── index.ts                     # Точка входа
+│   └── package.json
 │
+├── scripts/
+│   ├── setup-letsencrypt.sh      # Let's Encrypt SSL
+│   └── setup-selfsigned.sh       # Self-signed SSL
+│
+├── Dockerfile                    # Multi-stage build
+├── docker-compose.yml            # SQLite (default)
+├── docker-compose.postgres.yml   # PostgreSQL
+├── docker-compose.mysql.yml      # MySQL
+├── docker-compose.mongo.yml      # MongoDB
+├── .env.example                  # Конфигурация
 └── README.md
 ```
 
 ## 🚀 Быстрый старт
 
-### Frontend (Development):
+### Docker (рекомендуется):
+
 ```bash
-npm install
-npm run dev
+# SQLite (по умолчанию)
+docker compose up -d
+
+# PostgreSQL
+docker compose -f docker-compose.postgres.yml up -d
+
+# MySQL
+docker compose -f docker-compose.mysql.yml up -d
+
+# MongoDB
+docker compose -f docker-compose.mongo.yml up -d
 ```
 
-### Backend:
+### Разработка:
+
 ```bash
-cd server
-npm install
-npm run dev
+# Frontend
+npm install && npm run dev
+
+# Backend (в другом терминале)
+cd server && npm install && npm run dev
 ```
 
-### Production:
-```bash
-# Build frontend
-npm run build
+## 🔐 HTTPS / SSL
 
-# Build & start backend
-cd server
-npm install
-npm run build
-npm start
+### Self-signed (для разработки):
+```bash
+chmod +x scripts/setup-selfsigned.sh
+./scripts/setup-selfsigned.sh localhost
 ```
 
-## 🔐 HTTPS
-
-Для включения HTTPS поместите сертификаты в `server/certs/`:
-- `cert.pem` — SSL сертификат
-- `key.pem` — Приватный ключ
-
-Или используйте переменные окружения:
+### Let's Encrypt (для продакшена):
 ```bash
-SSL_CERT=/path/to/cert.pem SSL_KEY=/path/to/key.pem npm start
+chmod +x scripts/setup-letsencrypt.sh
+./scripts/setup-letsencrypt.sh your-domain.com admin@your-domain.com
 ```
 
-### Генерация self-signed сертификата:
-```bash
-mkdir -p server/certs
-openssl req -x509 -newkey rsa:4096 -keyout server/certs/key.pem -out server/certs/cert.pem -days 365 -nodes
-```
+## ⚙️ Админ-панель
+
+Доступ: `http(s)://your-domain/admin`
+
+**По умолчанию:**
+- Логин: `admin`
+- Пароль: `admin123`
+
+### Что можно настроить:
+
+| Раздел | Настройки |
+|--------|-----------|
+| 🎨 Основные | Название, описание, иконка, логотип, цвет темы |
+| 📏 Лимиты | Макс. размер файла, длина текста, срок жизни, лимит скачиваний |
+| 🔒 Безопасность | Пароли, автоудаление, регистрация |
+| 🌐 Сеть | CORS, rate limiting |
+| ⚙️ Система | Режим обслуживания, аналитика |
+| 📦 Шары | Просмотр и удаление шаров |
+| 📊 Статистика | Общая статистика сервиса |
+| 🔐 Безопасность | Смена пароля админа |
+
+## 🗄️ Поддержка баз данных
+
+| БД | Статус | Переменная |
+|----|--------|-----------|
+| SQLite | ✅ По умолчанию | `DB_TYPE=sqlite` |
+| PostgreSQL | ✅ | `DB_TYPE=postgres` |
+| MySQL | ✅ | `DB_TYPE=mysql` |
+| MongoDB | ✅ | `DB_TYPE=mongodb` |
+
+### Добавление новой БД:
+1. Создайте класс, реализующий `IDatabaseAdapter`
+2. Добавьте его в `DatabaseFactory.create()`
+3. Готово!
 
 ## 📡 API Endpoints
 
+### Публичные:
 | Метод | Путь | Описание |
 |-------|------|----------|
-| GET | `/api/health` | Проверка здоровья сервера |
+| GET | `/api/health` | Проверка здоровья |
 | POST | `/api/shares` | Создать текстовый шар |
 | POST | `/api/shares/upload` | Загрузить файл |
-| GET | `/api/shares/:id` | Получить информацию о шаре |
-| GET | `/api/shares/:id/download` | Скачать содержимое |
+| GET | `/api/shares/:id` | Информация о шаре |
+| GET | `/api/shares/:id/download` | Скачать контент |
+| GET | `/api/admin/public-config` | Публичные настройки сайта |
+
+### Админ (требует JWT):
+| Метод | Путь | Описание |
+|-------|------|----------|
+| POST | `/api/admin/login` | Авторизация |
+| GET | `/api/admin/settings` | Все настройки |
+| PUT | `/api/admin/settings` | Обновить настройки |
+| GET | `/api/admin/stats` | Статистика |
+| GET | `/api/admin/shares` | Список шаров |
+| DELETE | `/api/admin/shares/:id` | Удалить шар |
+| POST | `/api/admin/cleanup` | Очистить истёкшие |
+| PUT | `/api/admin/password` | Сменить пароль |
+
+## 🐳 Docker Compose варианты
+
+```bash
+# SQLite
+docker compose up -d
+
+# PostgreSQL
+docker compose -f docker-compose.postgres.yml up -d
+
+# MySQL
+docker compose -f docker-compose.mysql.yml up -d
+
+# MongoDB
+docker compose -f docker-compose.mongo.yml up -d
+```
+
+## 🔧 Переменные окружения
+
+```env
+# Сервер
+PORT=3001
+HOST=0.0.0.0
+NODE_ENV=production
+
+# База данных
+DB_TYPE=sqlite          # sqlite | postgres | mysql | mongodb
+DB_HOST=localhost       # Для postgres/mysql
+DB_PORT=5432
+DB_NAME=quickshare
+DB_USER=quickshare
+DB_PASSWORD=secret
+DB_MONGO_URI=mongodb://localhost:27017/quickshare  # Для mongodb
+
+# Админ
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=admin123
+JWT_SECRET=change-me-in-production
+
+# SSL
+SSL_CERT=/app/certs/cert.pem
+SSL_KEY=/app/certs/key.pem
+
+# Сеть
+CORS_ORIGIN=*
+```
 
 ## 🛡️ Безопасность
 
-- **Анонимность**: Нет регистрации, нет отслеживания
-- **Пароли**: Хеширование PBKDF2 с солью
-- **HTTPS**: Поддержка TLS из коробки
-- **Автоудаление**: Истекшие шары удаляются автоматически
-- **Лимиты**: Ограничение размера файлов (100 МБ), количества скачиваний
-- **Helmet**: Защита от распространённых веб-уязвимостей
-
-## ⚙️ Конфигурация
-
-### Переменные окружения:
-```env
-PORT=3001                    # Порт сервера
-HOST=0.0.0.0                # Хост
-CORS_ORIGIN=*               # Разрешённые домены
-SSL_CERT=./certs/cert.pem   # Путь к сертификату
-SSL_KEY=./certs/key.pem     # Путь к ключу
-NODE_ENV=production          # Режим работы
-```
-
-## 🔧 Расширение функционала
-
-Проект спроектирован для лёгкого расширения:
-
-1. **Новый тип контента**: Добавьте в `ShareType` и создайте компонент
-2. **Новое хранилище**: Реализуйте интерфейс и добавьте в `shareService`
-3. **Новый API endpoint**: Создайте роутер в `server/src/routes/`
-4. **Новый middleware**: Добавьте в `server/src/index.ts`
+- **Анонимность**: Без регистрации для пользователей
+- **JWT авторизация**: Для админ-панели
+- **Пароли**: PBKDF2 с солью (10000 итераций)
+- **HTTPS**: Let's Encrypt или self-signed
+- **Helmet**: Защита от XSS, CSRF, clickjacking
+- **Rate Limiting**: Защита от brute-force
+- **Автоудаление**: Истёкшие шары удаляются автоматически
 
 ## 📝 Лицензия
 

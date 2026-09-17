@@ -6,9 +6,12 @@ import http from 'http';
 import fs from 'fs';
 import path from 'path';
 import sharesRouter from './routes/shares';
-import { shareService } from './services/ShareService';
+import adminRouter from './routes/admin';
 import { rateLimiter } from './middleware/rateLimiter';
 import { requestLogger, securityHeaders } from './middleware/security';
+import { initializeDatabase, getDatabase } from './db/database';
+import { SettingsService } from './services/SettingsService';
+import { AuthService } from './services/AuthService';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -24,7 +27,7 @@ app.use(securityHeaders);
 // CORS
 app.use(cors({
   origin: process.env.CORS_ORIGIN || '*',
-  methods: ['GET', 'POST'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
@@ -33,33 +36,39 @@ if (process.env.NODE_ENV !== 'test') {
   app.use(requestLogger);
 }
 
-// Rate limiting
-app.use('/api/', rateLimiter.middleware);
-
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Rate limiting (applied after DB init)
+let rateLimitMiddleware: any = null;
+
 // API Routes
 app.use('/api/shares', sharesRouter);
+app.use('/api/admin', adminRouter);
 
 // Health check
-app.get('/api/health', (_req, res) => {
-  const stats = shareService.getStats();
-  res.json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    version: '1.0.0',
-    stats,
-  });
+app.get('/api/health', async (_req, res) => {
+  try {
+    const db = getDatabase();
+    const stats = await db.getStats();
+    const isHealthy = await db.isHealthy();
+    res.json({
+      status: isHealthy ? 'ok' : 'degraded',
+      timestamp: new Date().toISOString(),
+      version: '2.0.0',
+      dbType: stats.dbType,
+      stats,
+    });
+  } catch (error: any) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
 });
 
 // Serve static frontend in production
 const frontendPath = path.join(__dirname, '../../dist');
 if (fs.existsSync(frontendPath)) {
   app.use(express.static(frontendPath));
-  
-  // SPA fallback - serve index.html for all non-API routes
   app.get('*', (req, res) => {
     if (!req.path.startsWith('/api/')) {
       res.sendFile(path.join(frontendPath, 'index.html'));
@@ -95,40 +104,80 @@ process.on('SIGINT', () => {
 });
 
 // Start server
-function startServer() {
-  // Check for HTTPS certificates
-  const certPath = process.env.SSL_CERT || path.join(process.cwd(), 'certs', 'cert.pem');
-  const keyPath = process.env.SSL_KEY || path.join(process.cwd(), 'certs', 'key.pem');
+async function startServer() {
+  try {
+    // Initialize database
+    const db = await initializeDatabase();
 
-  if (fs.existsSync(certPath) && fs.existsSync(keyPath)) {
-    const httpsOptions = {
-      cert: fs.readFileSync(certPath),
-      key: fs.readFileSync(keyPath),
-    };
+    // Initialize settings service
+    const settingsService = new SettingsService(db);
+    await settingsService.loadCache();
 
-    const server = https.createServer(httpsOptions, app);
-    server.listen(Number(PORT), HOST, () => {
-      console.log('');
-      console.log('  🔗 QuickShare Server');
-      console.log('  ═══════════════════');
-      console.log(`  🌐 HTTPS: https://${HOST}:${PORT}`);
-      console.log(`  📁 Data:  ${path.join(process.cwd(), 'data')}`);
-      console.log(`  🔒 SSL:   Enabled`);
-      console.log('');
-    });
-  } else {
-    const server = http.createServer(app);
-    server.listen(Number(PORT), HOST, () => {
-      console.log('');
-      console.log('  🔗 QuickShare Server');
-      console.log('  ═══════════════════');
-      console.log(`  🌐 HTTP:  http://${HOST}:${PORT}`);
-      console.log(`  📁 Data:  ${path.join(process.cwd(), 'data')}`);
-      console.log(`  🔒 SSL:   Disabled (add certs to ./certs/)`);
-      console.log('');
-      console.log('  💡 Run ./generate-certs.sh for HTTPS support');
-      console.log('');
-    });
+    // Initialize auth service and ensure default admin
+    const authService = new AuthService(db);
+    await authService.ensureDefaultAdmin();
+
+    // Setup rate limiter with settings
+    const rateLimitWindow = await settingsService.getNumber('rate_limit_window', 60000);
+    const rateLimitMax = await settingsService.getNumber('rate_limit_max', 100);
+    rateLimitMiddleware = new (require('./middleware/rateLimiter').default)(rateLimitWindow, rateLimitMax);
+
+    // Apply rate limiter
+    app.use('/api/', rateLimitMiddleware.middleware);
+
+    // Check for HTTPS certificates
+    const certPath = process.env.SSL_CERT || path.join(process.cwd(), 'certs', 'cert.pem');
+    const keyPath = process.env.SSL_KEY || path.join(process.cwd(), 'certs', 'key.pem');
+
+    if (fs.existsSync(certPath) && fs.existsSync(keyPath)) {
+      const httpsOptions = {
+        cert: fs.readFileSync(certPath),
+        key: fs.readFileSync(keyPath),
+      };
+
+      const server = https.createServer(httpsOptions, app);
+      server.listen(Number(PORT), HOST, () => {
+        console.log('');
+        console.log('  🔗 QuickShare Server v2.0');
+        console.log('  ═════════════════════════');
+        console.log(`  🌐 HTTPS: https://${HOST}:${PORT}`);
+        console.log(`  📁 Data:  ${path.join(process.cwd(), 'data')}`);
+        console.log(`  🔒 SSL:   Enabled`);
+        console.log(`  🗄️  DB:    ${(await db.getStats()).dbType}`);
+        console.log('');
+      });
+    } else {
+      const server = http.createServer(app);
+      server.listen(Number(PORT), HOST, () => {
+        console.log('');
+        console.log('  🔗 QuickShare Server v2.0');
+        console.log('  ═════════════════════════');
+        console.log(`  🌐 HTTP:  http://${HOST}:${PORT}`);
+        console.log(`  📁 Data:  ${path.join(process.cwd(), 'data')}`);
+        console.log(`  🔒 SSL:   Disabled`);
+        console.log(`  🗄️  DB:    sqlite (default)`);
+        console.log('');
+        console.log('  💡 Run ./generate-certs.sh for HTTPS support');
+        console.log('  💡 Use Docker for production deployment');
+        console.log('');
+      });
+    }
+
+    // Periodic cleanup
+    setInterval(async () => {
+      try {
+        const deleted = await db.cleanupExpired();
+        if (deleted > 0) {
+          console.log(`🧹 Cleaned up ${deleted} expired shares`);
+        }
+      } catch (e) {
+        // ignore
+      }
+    }, 60 * 60 * 1000);
+
+  } catch (error: any) {
+    console.error('❌ Failed to start server:', error.message);
+    process.exit(1);
   }
 }
 

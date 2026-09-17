@@ -1,0 +1,54 @@
+# ============================================
+# QuickShare — Docker Compose with MongoDB
+# ============================================
+version: '3.8'
+
+services:
+  quickshare:
+    build: .
+    container_name: quickshare
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3001}:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - HOST=0.0.0.0
+      - DB_TYPE=mongodb
+      - DB_MONGO_URI=mongodb://mongo:27017/quickshare
+      - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123}
+      - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
+      - CORS_ORIGIN=${CORS_ORIGIN:-*}
+    volumes:
+      - quickshare_uploads:/app/data/uploads
+      - ./certs:/app/certs:ro
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - quickshare_net
+
+  mongo:
+    image: mongo:7
+    container_name: quickshare-db
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - quickshare_net
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mongo_data:
+    driver: local
+  quickshare_uploads:
+    driver: local
+
+networks:
+  quickshare_net:
+    driver: bridge

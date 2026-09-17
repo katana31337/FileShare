@@ -5,14 +5,25 @@ import { ShareOptions } from './components/ShareOptions';
 import { ShareLink } from './components/ShareLink';
 import { DownloadPage } from './components/DownloadPage';
 import { ShareHistory, useShareHistory } from './components/ShareHistory';
+import { AdminPanel } from './components/admin/AdminPanel';
+import { AdminLogin } from './components/admin/AdminLogin';
 import { shareService } from './services/shareService';
+import { adminApi } from './services/adminApi';
 import { ShareCreateResponse, ShareType } from './types';
 
-type AppState = 'home' | 'result' | 'download';
+type AppState = 'home' | 'result' | 'download' | 'admin-login' | 'admin-panel';
+
+interface SiteConfig {
+  name: string;
+  description: string;
+  icon: string;
+  logoUrl: string;
+  primaryColor: string;
+}
 
 function App() {
   const [appState, setAppState] = useState<AppState>('home');
-  const [shareType, setShareType] = useState<ShareType>('text');
+  const [shareType, setShareType] = useState<ShareType>('file'); // File is default now
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [shareResult, setShareResult] = useState<ShareCreateResponse | null>(null);
@@ -24,6 +35,13 @@ function App() {
   });
   const [isServerOnline, setIsServerOnline] = useState<boolean | null>(null);
   const { addToHistory } = useShareHistory();
+  const [siteConfig, setSiteConfig] = useState<SiteConfig>({
+    name: 'QuickShare',
+    description: 'Анонимный обмен файлами и текстом',
+    icon: '🔗',
+    logoUrl: '',
+    primaryColor: '#9333ea',
+  });
 
   useEffect(() => {
     // Check if we're on a share URL
@@ -32,13 +50,46 @@ function App() {
     if (shareMatch) {
       setShareId(shareMatch[1]);
       setAppState('download');
+      return;
+    }
+
+    // Check if we're on admin URL
+    if (path === '/admin') {
+      if (adminApi.isAuthenticated()) {
+        setAppState('admin-panel');
+      } else {
+        setAppState('admin-login');
+      }
+      return;
     }
 
     // Check server health
     shareService.checkHealth().then((online) => {
       setIsServerOnline(online);
     });
+
+    // Load site config from server
+    loadSiteConfig();
   }, []);
+
+  const loadSiteConfig = async () => {
+    try {
+      const config = await adminApi.getPublicConfig();
+      if (config && config.name) {
+        setSiteConfig({
+          name: config.name || 'QuickShare',
+          description: config.description || 'Анонимный обмен файлами и текстом',
+          icon: config.icon || '🔗',
+          logoUrl: config.logoUrl || '',
+          primaryColor: config.primaryColor || '#9333ea',
+        });
+        // Update document title
+        document.title = config.name || 'QuickShare';
+      }
+    } catch {
+      // Use defaults if server unavailable
+    }
+  };
 
   const handleFileSelect = useCallback((file: File) => {
     setSelectedFile(file);
@@ -104,8 +155,30 @@ function App() {
     setSelectedFile(null);
     setShareResult(null);
     setOptions({ expiresIn: 0, maxDownloads: 0, password: '' });
+    window.history.pushState({}, '', '/');
   };
 
+  const handleAdminLoginSuccess = () => {
+    setAppState('admin-panel');
+    window.history.pushState({}, '', '/admin');
+  };
+
+  const handleAdminBack = () => {
+    setAppState('home');
+    window.history.pushState({}, '', '/');
+  };
+
+  // Admin login page
+  if (appState === 'admin-login') {
+    return <AdminLogin onSuccess={handleAdminLoginSuccess} onCancel={handleReset} />;
+  }
+
+  // Admin panel
+  if (appState === 'admin-panel') {
+    return <AdminPanel onBack={handleAdminBack} />;
+  }
+
+  // Download page
   if (appState === 'download') {
     return (
       <div className="min-h-screen bg-gray-900">
@@ -128,11 +201,15 @@ function App() {
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
           <button onClick={handleReset} className="flex items-center gap-3 group">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center shadow-lg shadow-purple-500/20 group-hover:shadow-purple-500/40 transition-shadow">
-              <span className="text-xl">🔗</span>
+              {siteConfig.logoUrl ? (
+                <img src={siteConfig.logoUrl} alt="" className="w-6 h-6 rounded" />
+              ) : (
+                <span className="text-xl">{siteConfig.icon}</span>
+              )}
             </div>
             <div>
-              <h1 className="text-xl font-bold text-white">QuickShare</h1>
-              <p className="text-xs text-gray-500">Анонимный обмен файлами</p>
+              <h1 className="text-xl font-bold text-white">{siteConfig.name}</h1>
+              <p className="text-xs text-gray-500">{siteConfig.description}</p>
             </div>
           </button>
 
@@ -149,6 +226,26 @@ function App() {
               }`} />
               {isServerOnline === true ? 'Сервер онлайн' : isServerOnline === false ? 'Локальный режим' : 'Проверка...'}
             </div>
+
+            {/* Admin button */}
+            <button
+              onClick={() => {
+                if (adminApi.isAuthenticated()) {
+                  setAppState('admin-panel');
+                  window.history.pushState({}, '', '/admin');
+                } else {
+                  setAppState('admin-login');
+                  window.history.pushState({}, '', '/admin');
+                }
+              }}
+              className="p-2 text-gray-400 hover:text-purple-400 transition-colors rounded-lg hover:bg-gray-800/50"
+              title="Панель управления"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </button>
           </div>
         </div>
       </header>
@@ -173,25 +270,12 @@ function App() {
                   Поделитесь мгновенно
                 </h2>
                 <p className="text-gray-400">
-                  Анонимный обмен файлами и текстом через короткие ссылки
+                  {siteConfig.description}
                 </p>
               </div>
 
-              {/* Type selector */}
+              {/* Type selector — File is default/first */}
               <div className="flex gap-2 mb-6 p-1 bg-gray-900/50 rounded-xl">
-                <button
-                  onClick={() => setShareType('text')}
-                  className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-2 ${
-                    shareType === 'text'
-                      ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20'
-                      : 'text-gray-400 hover:text-white'
-                  }`}
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  Текст
-                </button>
                 <button
                   onClick={() => setShareType('file')}
                   className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-2 ${
@@ -205,16 +289,24 @@ function App() {
                   </svg>
                   Файл
                 </button>
+                <button
+                  onClick={() => setShareType('text')}
+                  className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-2 ${
+                    shareType === 'text'
+                      ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Текст
+                </button>
               </div>
 
               {/* Content area */}
               <div className="mb-6">
-                {shareType === 'text' ? (
-                  <TextShare
-                    onSubmit={handleTextSubmit}
-                    isSubmitting={isSubmitting}
-                  />
-                ) : (
+                {shareType === 'file' ? (
                   <div className="space-y-4">
                     <FileUpload onFileSelect={handleFileSelect} isUploading={isSubmitting} />
                     <button
@@ -235,6 +327,11 @@ function App() {
                       )}
                     </button>
                   </div>
+                ) : (
+                  <TextShare
+                    onSubmit={handleTextSubmit}
+                    isSubmitting={isSubmitting}
+                  />
                 )}
               </div>
 
@@ -278,8 +375,8 @@ function App() {
                     <span className="text-purple-400 font-bold text-sm">1</span>
                   </div>
                   <div>
-                    <p className="text-white font-medium">Выберите контент</p>
-                    <p className="text-gray-500 text-sm">Загрузите файл или введите текст</p>
+                    <p className="text-white font-medium">Загрузите файл или введите текст</p>
+                    <p className="text-gray-500 text-sm">Выберите тип контента и загрузите его</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
@@ -288,7 +385,7 @@ function App() {
                   </div>
                   <div>
                     <p className="text-white font-medium">Настройте параметры</p>
-                    <p className="text-gray-500 text-sm">Установите срок жизни, лимит скачиваний или пароль</p>
+                    <p className="text-gray-500 text-sm">Срок жизни, лимит скачиваний, пароль</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
@@ -311,7 +408,7 @@ function App() {
         <div className="max-w-5xl mx-auto px-4 py-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-gray-500 text-sm">
-              QuickShare — Анонимный обмен файлами • SOLID Architecture
+              {siteConfig.name} • SOLID Architecture • v2.0
             </p>
             <div className="flex items-center gap-4 text-gray-500 text-sm">
               <span className="flex items-center gap-1">
@@ -321,7 +418,7 @@ function App() {
                 <span className="text-purple-400">●</span> No tracking
               </span>
               <span className="flex items-center gap-1">
-                <span className="text-blue-400">●</span> Open source
+                <span className="text-blue-400">●</span> Multi-DB
               </span>
             </div>
           </div>

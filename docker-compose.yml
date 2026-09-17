@@ -1,0 +1,50 @@
+# ============================================
+# QuickShare — Docker Compose (SQLite default)
+# ============================================
+# Usage:
+#   docker compose up -d
+#   docker compose down
+
+version: '3.8'
+
+services:
+  quickshare:
+    build: .
+    container_name: quickshare
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3001}:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - HOST=0.0.0.0
+      - DB_TYPE=sqlite
+      - DB_SQLITE_PATH=/app/data/quickshare.db
+      - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123}
+      - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
+      - CORS_ORIGIN=${CORS_ORIGIN:-*}
+      - SSL_CERT=${SSL_CERT:-}
+      - SSL_KEY=${SSL_KEY:-}
+    volumes:
+      - quickshare_data:/app/data
+      - quickshare_uploads:/app/data/uploads
+      - ./certs:/app/certs:ro
+    networks:
+      - quickshare_net
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  quickshare_data:
+    driver: local
+  quickshare_uploads:
+    driver: local
+
+networks:
+  quickshare_net:
+    driver: bridge
