@@ -1,5 +1,334 @@
-export default function App() {
+import React, { useState, useEffect, useCallback } from 'react';
+import { FileUpload } from './components/FileUpload';
+import { TextShare } from './components/TextShare';
+import { ShareOptions } from './components/ShareOptions';
+import { ShareLink } from './components/ShareLink';
+import { DownloadPage } from './components/DownloadPage';
+import { ShareHistory, useShareHistory } from './components/ShareHistory';
+import { shareService } from './services/shareService';
+import { ShareCreateResponse, ShareType } from './types';
+
+type AppState = 'home' | 'result' | 'download';
+
+function App() {
+  const [appState, setAppState] = useState<AppState>('home');
+  const [shareType, setShareType] = useState<ShareType>('text');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [shareResult, setShareResult] = useState<ShareCreateResponse | null>(null);
+  const [shareId, setShareId] = useState<string>('');
+  const [options, setOptions] = useState({
+    expiresIn: 0,
+    maxDownloads: 0,
+    password: '',
+  });
+  const [isServerOnline, setIsServerOnline] = useState<boolean | null>(null);
+  const { addToHistory } = useShareHistory();
+
+  useEffect(() => {
+    // Check if we're on a share URL
+    const path = window.location.pathname;
+    const shareMatch = path.match(/^\/s\/([A-Za-z0-9]+)/);
+    if (shareMatch) {
+      setShareId(shareMatch[1]);
+      setAppState('download');
+    }
+
+    // Check server health
+    shareService.checkHealth().then((online) => {
+      setIsServerOnline(online);
+    });
+  }, []);
+
+  const handleFileSelect = useCallback((file: File) => {
+    setSelectedFile(file);
+  }, []);
+
+  const handleTextSubmit = async (text: string) => {
+    setIsSubmitting(true);
+    try {
+      const result = await shareService.createShare({
+        type: 'text',
+        content: text,
+        expiresIn: options.expiresIn || undefined,
+        maxDownloads: options.maxDownloads || undefined,
+        password: options.password || undefined,
+      });
+      setShareResult(result);
+      setAppState('result');
+      addToHistory({
+        id: result.id,
+        type: 'text',
+        shortUrl: result.shortUrl,
+        fullUrl: result.fullUrl,
+        createdAt: result.createdAt,
+        expiresAt: result.expiresAt,
+      });
+    } catch (err: any) {
+      alert('Ошибка: ' + (err.message || 'Не удалось создать ссылку'));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleFileSubmit = async () => {
+    if (!selectedFile) return;
+    setIsSubmitting(true);
+
+    try {
+      const result = await shareService.uploadFile(selectedFile, {
+        expiresIn: options.expiresIn || undefined,
+        maxDownloads: options.maxDownloads || undefined,
+        password: options.password || undefined,
+      });
+      setShareResult(result);
+      setAppState('result');
+      addToHistory({
+        id: result.id,
+        type: 'file',
+        shortUrl: result.shortUrl,
+        fullUrl: result.fullUrl,
+        createdAt: result.createdAt,
+        expiresAt: result.expiresAt,
+        fileName: selectedFile.name,
+      });
+    } catch (err: any) {
+      alert('Ошибка: ' + (err.message || 'Не удалось загрузить файл'));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleReset = () => {
+    setAppState('home');
+    setSelectedFile(null);
+    setShareResult(null);
+    setOptions({ expiresIn: 0, maxDownloads: 0, password: '' });
+  };
+
+  if (appState === 'download') {
+    return (
+      <div className="min-h-screen bg-gray-900">
+        <DownloadPage shareId={shareId} />
+      </div>
+    );
+  }
+
   return (
-    <div/>
+    <div className="min-h-screen bg-gray-900 relative overflow-hidden">
+      {/* Background effects */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-pink-500/10 rounded-full blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl" />
+      </div>
+
+      {/* Header */}
+      <header className="relative z-10 border-b border-gray-800/50">
+        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
+          <button onClick={handleReset} className="flex items-center gap-3 group">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center shadow-lg shadow-purple-500/20 group-hover:shadow-purple-500/40 transition-shadow">
+              <span className="text-xl">🔗</span>
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-white">QuickShare</h1>
+              <p className="text-xs text-gray-500">Анонимный обмен файлами</p>
+            </div>
+          </button>
+
+          <div className="flex items-center gap-3">
+            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs ${
+              isServerOnline === true
+                ? 'bg-green-500/10 text-green-400 border border-green-500/20'
+                : isServerOnline === false
+                  ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20'
+                  : 'bg-gray-500/10 text-gray-400 border border-gray-500/20'
+            }`}>
+              <div className={`w-2 h-2 rounded-full ${
+                isServerOnline === true ? 'bg-green-400 animate-pulse' : isServerOnline === false ? 'bg-yellow-400' : 'bg-gray-400'
+              }`} />
+              {isServerOnline === true ? 'Сервер онлайн' : isServerOnline === false ? 'Локальный режим' : 'Проверка...'}
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main content */}
+      <main className="relative z-10 max-w-2xl mx-auto px-4 py-12">
+        {appState === 'result' && shareResult ? (
+          <div className="bg-gray-800/40 backdrop-blur-xl border border-gray-700/50 rounded-3xl p-8 shadow-2xl">
+            <ShareLink
+              shortUrl={shareResult.shortUrl}
+              fullUrl={shareResult.fullUrl}
+              expiresAt={shareResult.expiresAt}
+              onReset={handleReset}
+            />
+          </div>
+        ) : (
+          <>
+            <div className="bg-gray-800/40 backdrop-blur-xl border border-gray-700/50 rounded-3xl p-8 shadow-2xl">
+              {/* Title */}
+              <div className="text-center mb-8">
+                <h2 className="text-3xl font-bold text-white mb-2">
+                  Поделитесь мгновенно
+                </h2>
+                <p className="text-gray-400">
+                  Анонимный обмен файлами и текстом через короткие ссылки
+                </p>
+              </div>
+
+              {/* Type selector */}
+              <div className="flex gap-2 mb-6 p-1 bg-gray-900/50 rounded-xl">
+                <button
+                  onClick={() => setShareType('text')}
+                  className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-2 ${
+                    shareType === 'text'
+                      ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Текст
+                </button>
+                <button
+                  onClick={() => setShareType('file')}
+                  className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-2 ${
+                    shareType === 'file'
+                      ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                  Файл
+                </button>
+              </div>
+
+              {/* Content area */}
+              <div className="mb-6">
+                {shareType === 'text' ? (
+                  <TextShare
+                    onSubmit={handleTextSubmit}
+                    isSubmitting={isSubmitting}
+                  />
+                ) : (
+                  <div className="space-y-4">
+                    <FileUpload onFileSelect={handleFileSelect} isUploading={isSubmitting} />
+                    <button
+                      onClick={handleFileSubmit}
+                      disabled={!selectedFile || isSubmitting}
+                      className="w-full py-3 px-6 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 disabled:from-gray-600 disabled:to-gray-600 disabled:cursor-not-allowed text-white font-medium rounded-xl transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                      {isSubmitting ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                          </svg>
+                          Загрузка...
+                        </span>
+                      ) : (
+                        '🚀 Создать ссылку'
+                      )}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Options */}
+              <ShareOptions
+                expiresIn={options.expiresIn}
+                maxDownloads={options.maxDownloads}
+                password={options.password}
+                onChange={setOptions}
+              />
+            </div>
+
+            {/* History */}
+            <ShareHistory />
+
+            {/* Features */}
+            <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-gray-800/30 border border-gray-700/30 rounded-2xl p-5 text-center hover:border-purple-500/30 transition-colors">
+                <div className="text-3xl mb-2">🔒</div>
+                <h3 className="text-white font-medium mb-1">Анонимно</h3>
+                <p className="text-gray-500 text-sm">Без регистрации и авторизации</p>
+              </div>
+              <div className="bg-gray-800/30 border border-gray-700/30 rounded-2xl p-5 text-center hover:border-purple-500/30 transition-colors">
+                <div className="text-3xl mb-2">⚡</div>
+                <h3 className="text-white font-medium mb-1">Быстро</h3>
+                <p className="text-gray-500 text-sm">Мгновенная генерация ссылок</p>
+              </div>
+              <div className="bg-gray-800/30 border border-gray-700/30 rounded-2xl p-5 text-center hover:border-purple-500/30 transition-colors">
+                <div className="text-3xl mb-2">🛡️</div>
+                <h3 className="text-white font-medium mb-1">Безопасно</h3>
+                <p className="text-gray-500 text-sm">Шифрование и автоудаление</p>
+              </div>
+            </div>
+
+            {/* How it works */}
+            <div className="mt-8 bg-gray-800/20 border border-gray-700/30 rounded-2xl p-6">
+              <h3 className="text-white font-semibold text-lg mb-4 text-center">Как это работает?</h3>
+              <div className="space-y-4">
+                <div className="flex items-start gap-4">
+                  <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center shrink-0">
+                    <span className="text-purple-400 font-bold text-sm">1</span>
+                  </div>
+                  <div>
+                    <p className="text-white font-medium">Выберите контент</p>
+                    <p className="text-gray-500 text-sm">Загрузите файл или введите текст</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-4">
+                  <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center shrink-0">
+                    <span className="text-purple-400 font-bold text-sm">2</span>
+                  </div>
+                  <div>
+                    <p className="text-white font-medium">Настройте параметры</p>
+                    <p className="text-gray-500 text-sm">Установите срок жизни, лимит скачиваний или пароль</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-4">
+                  <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center shrink-0">
+                    <span className="text-purple-400 font-bold text-sm">3</span>
+                  </div>
+                  <div>
+                    <p className="text-white font-medium">Поделитесь ссылкой</p>
+                    <p className="text-gray-500 text-sm">Отправьте короткую ссылку получателю</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+      </main>
+
+      {/* Footer */}
+      <footer className="relative z-10 border-t border-gray-800/50 mt-12">
+        <div className="max-w-5xl mx-auto px-4 py-6">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <p className="text-gray-500 text-sm">
+              QuickShare — Анонимный обмен файлами • SOLID Architecture
+            </p>
+            <div className="flex items-center gap-4 text-gray-500 text-sm">
+              <span className="flex items-center gap-1">
+                <span className="text-green-400">●</span> End-to-end
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="text-purple-400">●</span> No tracking
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="text-blue-400">●</span> Open source
+              </span>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
   );
 }
+
+export default App;
