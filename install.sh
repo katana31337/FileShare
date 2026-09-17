@@ -345,8 +345,6 @@ generate_docker_compose() {
 # SSL: $SSL_ENABLED
 # Port: $PORT
 
-version: '3.8'
-
 services:
   # Frontend - Nginx serving React app
   frontend:
@@ -559,10 +557,45 @@ start_installation() {
   echo -e "${BLUE}╚══════════════════════════════════════════════════════════╝${NC}"
   echo ""
   
-  echo -e "${YELLOW}Сборка и запуск контейнеров...${NC}"
+  # Check if docker-compose.yml exists
+  if [ ! -f "docker-compose.yml" ]; then
+    echo -e "${RED}❌ docker-compose.yml не найден!${NC}"
+    exit 1
+  fi
+  
+  # Build and start containers with progress
+  echo -e "${CYAN}📦 Сборка контейнеров...${NC}"
   echo ""
   
-  docker compose up -d --build
+  # Build backend first
+  echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+  echo -e "${BLUE}🔧 Сборка backend (Node.js + Express)...${NC}"
+  echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+  if ! docker compose build backend; then
+    echo -e "${RED}❌ Ошибка сборки backend!${NC}"
+    exit 1
+  fi
+  echo -e "${GREEN}✅ Backend собран успешно${NC}"
+  
+  echo ""
+  echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+  echo -e "${BLUE}🎨 Сборка frontend (React + Nginx)...${NC}"
+  echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+  if ! docker compose build frontend; then
+    echo -e "${RED}❌ Ошибка сборки frontend!${NC}"
+    exit 1
+  fi
+  echo -e "${GREEN}✅ Frontend собран успешно${NC}"
+  
+  echo ""
+  echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+  echo -e "${BLUE}🚀 Запуск всех сервисов...${NC}"
+  echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+  if ! docker compose up -d; then
+    echo -e "${RED}❌ Ошибка запуска сервисов!${NC}"
+    exit 1
+  fi
+  echo -e "${GREEN}✅ Все сервисы запущены${NC}"
   
   echo ""
   echo -e "${GREEN}╔══════════════════════════════════════════════════════════╗${NC}"
