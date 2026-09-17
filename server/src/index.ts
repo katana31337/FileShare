@@ -127,6 +127,10 @@ async function startServer() {
     // Apply rate limiter
     app.use('/api/', rateLimitMiddleware.middleware);
 
+    // Get database type for logging
+    const stats = await db.getStats();
+    const dbType = stats.dbType;
+
     // Check for HTTPS certificates
     const certPath = process.env.SSL_CERT || path.join(process.cwd(), 'certs', 'cert.pem');
     const keyPath = process.env.SSL_KEY || path.join(process.cwd(), 'certs', 'key.pem');
@@ -138,14 +142,19 @@ async function startServer() {
       };
 
       const server = https.createServer(httpsOptions, app);
-      server.listen(Number(PORT), HOST, () => {
+      server.listen(Number(PORT), HOST, async () => {
         console.log('');
         console.log('  🔗 QuickShare Server v2.0');
         console.log('  ═════════════════════════');
         console.log(`  🌐 HTTPS: https://${HOST}:${PORT}`);
         console.log(`  📁 Data:  ${path.join(process.cwd(), 'data')}`);
         console.log(`  🔒 SSL:   Enabled`);
-        console.log(`  🗄️  DB:    ${(await db.getStats()).dbType}`);
+        try {
+          const stats = await db.getStats();
+          console.log(`  🗄️  DB:    ${stats.dbType}`);
+        } catch (e) {
+          console.log(`  🗄️  DB:    unknown`);
+        }
         console.log('');
       });
     } else {
@@ -157,7 +166,7 @@ async function startServer() {
         console.log(`  🌐 HTTP:  http://${HOST}:${PORT}`);
         console.log(`  📁 Data:  ${path.join(process.cwd(), 'data')}`);
         console.log(`  🔒 SSL:   Disabled`);
-        console.log(`  🗄️  DB:    sqlite (default)`);
+        console.log(`  🗄️  DB:    ${dbType}`);
         console.log('');
         console.log('  💡 Run ./generate-certs.sh for HTTPS support');
         console.log('  💡 Use Docker for production deployment');
