@@ -91,36 +91,38 @@
 │   └── package.json
 │
 ├── scripts/
-│   ├── setup-letsencrypt.sh      # Let's Encrypt SSL
-│   └── setup-selfsigned.sh       # Self-signed SSL
+│   ├── cleanup.sh                # Полная очистка (с опциями)
+│   ├── cleanup-fast.sh           # Быстрая очистка (без подтверждений)
+│   └── cleanup.bat               # Очистка для Windows
 │
 ├── Dockerfile.frontend           # Frontend: Nginx + React
 ├── Dockerfile.backend            # Backend: Node.js + Express
 ├── nginx.conf                    # Nginx конфигурация (reverse proxy)
-├── docker-compose.yml            # PostgreSQL (default)
-├── docker-compose.sqlite.yml     # SQLite
-├── docker-compose.mysql.yml      # MySQL
-├── docker-compose.mongo.yml      # MongoDB
-├── .env.example                  # Конфигурация
+├── install.sh                    # Интерактивный мастер установки
+├── .env.example                  # Пример конфигурации
 └── README.md
 ```
 
 ## 🚀 Быстрый старт
 
-### Docker (рекомендуется):
+### Установка (рекомендуется):
 
 ```bash
-# PostgreSQL (по умолчанию)
+chmod +x install.sh
+./install.sh
+```
+
+Интерактивный мастер установки:
+- 🎯 Выбор базы данных (PostgreSQL / MySQL / MongoDB / SQLite)
+- 🔐 Настройка SSL (Let's Encrypt / Self-signed / Без SSL)
+- 🌐 Выбор порта
+- 📝 Автоматическая генерация docker-compose.yml
+- 🚀 Запуск контейнеров
+
+### Ручной запуск (если docker-compose.yml уже есть):
+
+```bash
 docker compose up -d
-
-# SQLite
-docker compose -f docker-compose.sqlite.yml up -d
-
-# MySQL
-docker compose -f docker-compose.mysql.yml up -d
-
-# MongoDB
-docker compose -f docker-compose.mongo.yml up -d
 ```
 
 ### Разработка:
@@ -142,29 +144,61 @@ npm run dev
 
 Frontend автоматически проксирует `/api` запросы на backend через Vite dev server.
 
+## 🧹 Скрипты очистки
+
+### Полная очистка (Linux/macOS)
+
+```bash
+# Сделать скрипт исполняемым
+chmod +x scripts/cleanup.sh
+
+# Остановить и удалить контейнеры
+./scripts/cleanup.sh
+
+# Полная очистка (контейнеры + volumes + images)
+./scripts/cleanup.sh --all
+
+# Быстрое удаление без подтверждений
+./scripts/cleanup.sh --force
+```
+
+### Быстрая очистка (Linux/macOS)
+
+```bash
+chmod +x scripts/cleanup-fast.sh
+./scripts/cleanup-fast.sh
+```
+
+### Очистка для Windows
+
+```cmd
+scripts\cleanup.bat
+```
+
+### Опции скрипта cleanup.sh
+
+| Опция | Описание |
+|-------|----------|
+| `--force`, `-f` | Принудительное удаление без подтверждений |
+| `--all`, `-a` | Удалить контейнеры + volumes + images |
+| `--help`, `-h` | Показать справку |
+
 ## 🔐 HTTPS / SSL
 
+Настройка SSL происходит через интерактивный мастер установки `./install.sh`:
+
 ### Self-signed (для разработки):
-```bash
-chmod +x scripts/setup-selfsigned.sh
-./scripts/setup-selfsigned.sh
-```
-
-Интерактивный режим позволит указать:
-- Локальный домен (quickshare.local, share.lan, 192.168.1.100)
+При выборе опции "Self-signed" в install.sh:
+- Укажите локальный домен (quickshare.local, share.lan, 192.168.1.100)
 - Автоматически добавит SAN для поддоменов
-- Инструкции по установке сертификата в ОС
-
-Или укажите домен сразу:
-```bash
-./scripts/setup-selfsigned.sh quickshare.local
-```
+- Инструкции по установке сертификата в ОС будут выведены после генерации
 
 ### Let's Encrypt (для продакшена):
-```bash
-chmod +x scripts/setup-letsencrypt.sh
-./scripts/setup-letsencrypt.sh your-domain.com admin@your-domain.com
-```
+При выборе опции "Let's Encrypt" в install.sh:
+- Укажите домен и email
+- Автоматически установит certbot если нужно
+- Получит и настроит сертификат
+- Настроит автообновление через crontab
 
 ## ⚙️ Админ-панель
 
@@ -238,30 +272,28 @@ chmod +x scripts/setup-letsencrypt.sh
 | POST | `/api/admin/cleanup` | Очистить истёкшие |
 | PUT | `/api/admin/password` | Сменить пароль |
 
-## 🐳 Docker Compose варианты
+## 🐳 Docker Compose
 
 ### Архитектура контейнеров
 
-Каждый вариант использует три контейнера:
+Приложение использует три контейнера:
 - **frontend** — Nginx, отдаёт React приложение и проксирует `/api` на backend
 - **backend** — Node.js Express API сервер
 - **database** — выбранная СУБД (PostgreSQL/MySQL/MongoDB/SQLite)
 
-### Запуск
+### Установка
 
 ```bash
-# PostgreSQL (по умолчанию)
-docker compose up -d
-
-# SQLite
-docker compose -f docker-compose.sqlite.yml up -d
-
-# MySQL
-docker compose -f docker-compose.mysql.yml up -d
-
-# MongoDB
-docker compose -f docker-compose.mongo.yml up -d
+# Интерактивная установка (рекомендуется)
+chmod +x install.sh
+./install.sh
 ```
+
+Мастер установки:
+1. Выберет базу данных
+2. Настроит SSL сертификат
+3. Сгенерирует docker-compose.yml
+4. Запустит контейнеры
 
 ### Масштабирование
 
