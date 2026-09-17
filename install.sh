@@ -567,11 +567,17 @@ start_installation() {
   echo -e "${CYAN}📦 Сборка контейнеров...${NC}"
   echo ""
   
+  # Очистка кэша Docker для старых образов
+  echo -e "${YELLOW}🧹 Очистка кэша Docker...${NC}"
+  docker compose down --rmi local 2>/dev/null || true
+  docker builder prune -f 2>/dev/null || true
+  echo ""
+  
   # Build backend first
   echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
   echo -e "${BLUE}🔧 Сборка backend (Node.js + Express)...${NC}"
   echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-  if ! docker compose build backend; then
+  if ! docker compose build --no-cache backend; then
     echo -e "${RED}❌ Ошибка сборки backend!${NC}"
     exit 1
   fi
@@ -581,7 +587,7 @@ start_installation() {
   echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
   echo -e "${BLUE}🎨 Сборка frontend (React + Nginx)...${NC}"
   echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-  if ! docker compose build frontend; then
+  if ! docker compose build --no-cache frontend; then
     echo -e "${RED}❌ Ошибка сборки frontend!${NC}"
     exit 1
   fi
