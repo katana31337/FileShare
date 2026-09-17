@@ -103,6 +103,7 @@ export class PostgresAdapter implements IDatabaseAdapter {
       ['require_password', 'false', 'security', 'Требовать пароль всегда'],
       ['auto_delete_downloaded', 'false', 'security', 'Удалять после скачивания'],
       ['enable_registration', 'false', 'security', 'Разрешить регистрацию'],
+      ['admin_panel_path', 'admin', 'admin', 'URL путь к админ-панели (без слешей)'],
       ['admin_email', '', 'admin', 'Email администратора'],
       ['maintenance_mode', 'false', 'system', 'Режим обслуживания'],
       ['enable_analytics', 'false', 'system', 'Включить аналитику'],

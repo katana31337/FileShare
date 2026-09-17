@@ -96,17 +96,7 @@ export class AuthService {
     });
   }
 
-  async ensureDefaultAdmin(): Promise<void> {
-    const adminUsername = process.env.ADMIN_USERNAME || 'admin';
-    const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
-
-    const existing = await this.db.findAdminByUsername(adminUsername);
-    if (!existing) {
-      await this.createAdmin(adminUsername, adminPassword);
-      console.log(`✅ Default admin created: ${adminUsername} / ${adminPassword}`);
-      console.log('⚠️  Change the password in the admin panel!');
-    }
-  }
+  // No longer auto-creates admin — first admin is created via UI setup
 
   async changePassword(adminId: string, oldPassword: string, newPassword: string): Promise<boolean> {
     const admin = await this.db.findAdminById(adminId);

@@ -125,6 +125,37 @@ class AdminApiService {
     const response = await fetch(`${API_BASE}/admin/public-config`);
     return response.json();
   }
+
+  async getAdminStatus(): Promise<{ adminExists: boolean; adminPanelPath: string; setupRequired: boolean }> {
+    const response = await fetch(`${API_BASE}/admin/status`);
+    return response.json();
+  }
+
+  async setupAdmin(username: string, password: string, adminPanelPath: string): Promise<any> {
+    const response = await fetch(`${API_BASE}/admin/setup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password, adminPanelPath }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Setup failed' }));
+      throw new Error(error.message || `HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    this.setToken(data.token);
+    return data;
+  }
+
+  async validatePassword(password: string): Promise<any> {
+    const response = await fetch(`${API_BASE}/admin/validate-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
+    });
+    return response.json();
+  }
 }
 
 export const adminApi = new AdminApiService();

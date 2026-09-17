@@ -20,8 +20,6 @@ services:
       - HOST=0.0.0.0
       - DB_TYPE=sqlite
       - DB_SQLITE_PATH=/app/data/quickshare.db
-      - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
-      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123}
       - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
       - CORS_ORIGIN=${CORS_ORIGIN:-*}
       - SSL_CERT=${SSL_CERT:-}
