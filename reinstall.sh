@@ -1,6 +1,9 @@
 #!/bin/bash
 # Быстрая переустановка QuickShare
 
+# Убедимся что скрипты исполняемые
+chmod +x install.sh scripts/cleanup.sh scripts/cleanup-fast.sh 2>/dev/null || true
+
 echo "🧹 Удаление старых ресурсов QuickShare..."
 docker compose down --rmi local --volumes 2>/dev/null || true
 
@@ -13,4 +16,4 @@ echo "🗑️  Удаление старого docker-compose.yml..."
 rm -f docker-compose.yml
 
 echo "🚀 Запуск install.sh..."
-./install.sh
+bash install.sh
