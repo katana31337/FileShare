@@ -9,8 +9,8 @@ dist
 docker-compose*.yml
 Dockerfile*
 scripts
-server
 certs
 data
 .vscode
 .idea
+*.log
