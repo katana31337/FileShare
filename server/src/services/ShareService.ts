@@ -1,4 +1,5 @@
-import { database, ShareRecord } from '../db/database';
+import { database } from '../db/database';
+import { ShareRecord } from '../db/adapters/IDatabaseAdapter';
 import { shortLinkService } from './ShortLinkService';
 import { fileService } from './FileService';
 
@@ -62,7 +63,7 @@ class ShareService {
       ? fileService.hashPassword(input.password)
       : null;
 
-    const record = database.create({
+    const record = await database.createShare({
       id,
       type: input.type,
       file_name: input.fileName || null,
@@ -85,7 +86,7 @@ class ShareService {
   }
 
   async getShareInfo(id: string): Promise<ShareInfoResponse> {
-    const record = database.findById(id);
+    const record = await database.findShareById(id);
     if (!record) {
       throw new Error('Share not found or expired');
     }
@@ -108,7 +109,7 @@ class ShareService {
   }
 
   async downloadShare(id: string, password?: string): Promise<ShareDownloadResponse> {
-    const record = database.findById(id);
+    const record = await database.findShareById(id);
     if (!record) {
       throw new Error('Share not found or expired');
     }
@@ -129,7 +130,7 @@ class ShareService {
     }
 
     // Increment downloads
-    database.incrementDownloads(id);
+    await database.incrementShareDownloads(id);
 
     const info = await this.getShareInfo(id);
 
