@@ -7,13 +7,14 @@ import { DownloadPage } from './components/DownloadPage';
 import { ShareHistory, useShareHistory } from './components/ShareHistory';
 import { AdminPanel } from './components/admin/AdminPanel';
 import { AdminLogin } from './components/admin/AdminLogin';
+import { AdminSetup } from './components/admin/AdminSetup';
 import { ConnectionBanner } from './components/ConnectionBanner';
 import { shareService } from './services/shareService';
 import { adminApi } from './services/adminApi';
 import { useConnectionStatus } from './hooks/useConnectionStatus';
 import { ShareCreateResponse, ShareType } from './types';
 
-type AppState = 'home' | 'result' | 'download' | 'admin-login' | 'admin-panel';
+type AppState = 'home' | 'result' | 'download' | 'admin-login' | 'admin-panel' | 'admin-setup';
 
 interface SiteConfig {
   name: string;
@@ -56,17 +57,7 @@ function App() {
       return;
     }
 
-    // Check if we're on admin URL
-    if (path === '/admin') {
-      if (adminApi.isAuthenticated()) {
-        setAppState('admin-panel');
-      } else {
-        setAppState('admin-login');
-      }
-      return;
-    }
-
-    // Load site config from server
+    // Load site config and check admin status
     loadSiteConfig();
   }, []);
 
@@ -83,6 +74,26 @@ function App() {
         });
         // Update document title
         document.title = config.name || 'QuickShare';
+      }
+
+      // Check admin status
+      const adminStatus = await adminApi.getAdminStatus();
+      const currentPath = window.location.pathname;
+      
+      // If admin setup is required, show setup form
+      if (adminStatus.setupRequired && currentPath === `/${adminStatus.adminPanelPath}`) {
+        setAppState('admin-setup');
+        return;
+      }
+
+      // Check if we're on admin URL
+      if (currentPath === `/${adminStatus.adminPanelPath}`) {
+        if (adminApi.isAuthenticated()) {
+          setAppState('admin-panel');
+        } else {
+          setAppState('admin-login');
+        }
+        return;
       }
     } catch {
       // Use defaults if server unavailable
@@ -156,15 +167,26 @@ function App() {
     window.history.pushState({}, '', '/');
   };
 
-  const handleAdminLoginSuccess = () => {
+  const handleAdminLoginSuccess = async () => {
     setAppState('admin-panel');
-    window.history.pushState({}, '', '/admin');
+    const adminStatus = await adminApi.getAdminStatus();
+    window.history.pushState({}, '', `/${adminStatus.adminPanelPath}`);
+  };
+
+  const handleAdminSetupSuccess = (adminPanelPath: string) => {
+    setAppState('admin-panel');
+    window.history.pushState({}, '', `/${adminPanelPath}`);
   };
 
   const handleAdminBack = () => {
     setAppState('home');
     window.history.pushState({}, '', '/');
   };
+
+  // Admin setup page (first time)
+  if (appState === 'admin-setup') {
+    return <AdminSetup onSuccess={handleAdminSetupSuccess} onCancel={handleReset} />;
+  }
 
   // Admin login page
   if (appState === 'admin-login') {
@@ -232,11 +254,23 @@ function App() {
 
             {/* Admin button */}
             <button
-              onClick={() => {
-                if (adminApi.isAuthenticated()) {
-                  setAppState('admin-panel');
-                  window.history.pushState({}, '', '/admin');
-                } else {
+              onClick={async () => {
+                try {
+                  const adminStatus = await adminApi.getAdminStatus();
+                  const adminPath = adminStatus.adminPanelPath || 'admin';
+                  
+                  if (adminStatus.setupRequired) {
+                    setAppState('admin-setup');
+                    window.history.pushState({}, '', `/${adminPath}`);
+                  } else if (adminApi.isAuthenticated()) {
+                    setAppState('admin-panel');
+                    window.history.pushState({}, '', `/${adminPath}`);
+                  } else {
+                    setAppState('admin-login');
+                    window.history.pushState({}, '', `/${adminPath}`);
+                  }
+                } catch {
+                  // Fallback to login if status check fails
                   setAppState('admin-login');
                   window.history.pushState({}, '', '/admin');
                 }

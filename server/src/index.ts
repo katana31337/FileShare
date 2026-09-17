@@ -69,6 +69,9 @@ app.get('/api/health', async (_req, res) => {
 const frontendPath = path.join(__dirname, '../../dist');
 if (fs.existsSync(frontendPath)) {
   app.use(express.static(frontendPath));
+  
+  // SPA fallback - serve index.html for all non-API routes
+  // This allows dynamic admin panel paths
   app.get('*', (req, res) => {
     if (!req.path.startsWith('/api/')) {
       res.sendFile(path.join(frontendPath, 'index.html'));
@@ -113,9 +116,8 @@ async function startServer() {
     const settingsService = new SettingsService(db);
     await settingsService.loadCache();
 
-    // Initialize auth service and ensure default admin
+    // Initialize auth service (admin is created via UI setup)
     const authService = new AuthService(db);
-    await authService.ensureDefaultAdmin();
 
     // Setup rate limiter with settings
     const rateLimitWindow = await settingsService.getNumber('rate_limit_window', 60000);

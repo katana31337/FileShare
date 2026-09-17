@@ -1,7 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { SettingsService } from '../services/SettingsService';
 import { AuthService } from '../services/AuthService';
-import { shareService } from '../services/ShareService';
+import { PasswordValidator } from '../services/PasswordValidator';
 import { database } from '../db/database';
 
 const router = Router();
@@ -39,11 +39,175 @@ router.get('/public-config', async (_req: Request, res: Response) => {
     const siteConfig = await settingsService.getSiteConfig();
     const limits = await settingsService.getLimits();
     const security = await settingsService.getSecurityConfig();
+    const adminPanelPath = await settingsService.getOrDefault('admin_panel_path', 'admin');
 
     res.json({
       ...siteConfig,
       limits,
       security,
+      adminPanelPath,
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: 'SERVER_ERROR', message: error.message });
+  }
+});
+
+/**
+ * GET /api/admin/status — Check if admin setup is needed
+ * Returns whether admin exists and what the admin panel path is
+ */
+router.get('/status', async (_req: Request, res: Response) => {
+  try {
+    const adminPanelPath = await settingsService.getOrDefault('admin_panel_path', 'admin');
+    
+    // Check if any admin exists by trying to find one
+    const allSettings = await settingsService.getAll();
+    const adminPathSetting = allSettings.find(s => s.key === 'admin_panel_path');
+    
+    // We need to check if admins exist in the database
+    // Since we don't have a direct method, we'll use a workaround
+    // Try to find any admin - if none exist, setup is needed
+    let adminExists = false;
+    try {
+      // Use raw database query if available
+      const db = database as any;
+      if (db.db && db.db.prepare) {
+        // SQLite
+        const result = db.db.prepare('SELECT COUNT(*) as count FROM admin_users').get();
+        adminExists = result.count > 0;
+      } else if (db.pool) {
+        // PostgreSQL
+        const result = await db.pool.query('SELECT COUNT(*) as count FROM admin_users');
+        adminExists = parseInt(result.rows[0].count) > 0;
+      } else if (db.connection) {
+        // MySQL
+        const [rows] = await db.connection.query('SELECT COUNT(*) as count FROM admin_users');
+        adminExists = (rows as any[])[0].count > 0;
+      } else if (db.db && db.db.collection) {
+        // MongoDB
+        const count = await db.db.collection('admin_users').countDocuments();
+        adminExists = count > 0;
+      }
+    } catch (e) {
+      // If we can't check, assume admin exists
+      adminExists = true;
+    }
+
+    res.json({
+      adminExists,
+      adminPanelPath,
+      setupRequired: !adminExists,
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: 'SERVER_ERROR', message: error.message });
+  }
+});
+
+/**
+ * POST /api/admin/setup — Create first admin (only if no admins exist)
+ */
+router.post('/setup', async (req: Request, res: Response) => {
+  try {
+    const { username, password, adminPanelPath } = req.body;
+
+    // Validation
+    if (!username || !password) {
+      return res.status(400).json({ error: 'VALIDATION', message: 'Username and password required' });
+    }
+
+    if (username.length < 3 || username.length > 50) {
+      return res.status(400).json({ error: 'VALIDATION', message: 'Username must be 3-50 characters' });
+    }
+
+    if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+      return res.status(400).json({ error: 'VALIDATION', message: 'Username can only contain letters, numbers, and underscores' });
+    }
+
+    // Validate password strength
+    const passwordValidation = PasswordValidator.validate(password);
+    if (!passwordValidation.isValid) {
+      return res.status(400).json({
+        error: 'WEAK_PASSWORD',
+        message: 'Password does not meet requirements',
+        feedback: passwordValidation.feedback,
+        score: passwordValidation.score,
+      });
+    }
+
+    // Check if admin already exists
+    let adminExists = false;
+    try {
+      const db = database as any;
+      if (db.db && db.db.prepare) {
+        const result = db.db.prepare('SELECT COUNT(*) as count FROM admin_users').get();
+        adminExists = result.count > 0;
+      } else if (db.pool) {
+        const result = await db.pool.query('SELECT COUNT(*) as count FROM admin_users');
+        adminExists = parseInt(result.rows[0].count) > 0;
+      } else if (db.connection) {
+        const [rows] = await db.connection.query('SELECT COUNT(*) as count FROM admin_users');
+        adminExists = (rows as any[])[0].count > 0;
+      } else if (db.db && db.db.collection) {
+        const count = await db.db.collection('admin_users').countDocuments();
+        adminExists = count > 0;
+      }
+    } catch (e) {
+      adminExists = true;
+    }
+
+    if (adminExists) {
+      return res.status(403).json({ error: 'FORBIDDEN', message: 'Admin already exists. Use login instead.' });
+    }
+
+    // Create admin
+    const authService = new AuthService(database);
+    const admin = await authService.createAdmin(username, password);
+
+    // Update admin panel path if provided
+    if (adminPanelPath) {
+      if (!/^[a-zA-Z0-9_-]+$/.test(adminPanelPath)) {
+        return res.status(400).json({ error: 'VALIDATION', message: 'Admin panel path can only contain letters, numbers, hyphens, and underscores' });
+      }
+      await settingsService.set('admin_panel_path', adminPanelPath, 'admin', 'URL путь к админ-панели');
+    }
+
+    // Generate token
+    const token = authService.generateToken(admin);
+
+    res.status(201).json({
+      success: true,
+      message: 'Admin created successfully',
+      token,
+      admin: {
+        id: admin.id,
+        username: admin.username,
+      },
+      adminPanelPath: adminPanelPath || 'admin',
+    });
+  } catch (error: any) {
+    if (error.message.includes('already exists')) {
+      return res.status(403).json({ error: 'FORBIDDEN', message: error.message });
+    }
+    res.status(500).json({ error: 'SERVER_ERROR', message: error.message });
+  }
+});
+
+/**
+ * POST /api/admin/validate-password — Validate password strength (public)
+ */
+router.post('/validate-password', async (req: Request, res: Response) => {
+  try {
+    const { password } = req.body;
+    if (!password) {
+      return res.status(400).json({ error: 'VALIDATION', message: 'Password required' });
+    }
+
+    const validation = PasswordValidator.validate(password);
+    const strength = PasswordValidator.getStrengthLabel(validation.score);
+
+    res.json({
+      ...validation,
+      strength,
     });
   } catch (error: any) {
     res.status(500).json({ error: 'SERVER_ERROR', message: error.message });
@@ -200,8 +364,15 @@ router.put('/password', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'VALIDATION', message: 'Old and new password required' });
     }
 
-    if (newPassword.length < 6) {
-      return res.status(400).json({ error: 'VALIDATION', message: 'Password must be at least 6 characters' });
+    // Validate new password strength
+    const passwordValidation = PasswordValidator.validate(newPassword);
+    if (!passwordValidation.isValid) {
+      return res.status(400).json({
+        error: 'WEAK_PASSWORD',
+        message: 'Password does not meet requirements',
+        feedback: passwordValidation.feedback,
+        score: passwordValidation.score,
+      });
     }
 
     const authService = new AuthService(database);
