@@ -1,8 +1,39 @@
 # 🔗 QuickShare v2.0 — Анонимный обмен файлами и текстом
 
-Клиент-серверное приложение для анонимного обмена файлами и текстом через короткие ссылки. Поддерживает любые базы данных, Docker-развёртывание, HTTPS, админ-панель.
+Микросервисное приложение для анонимного обмена файлами и текстом через короткие ссылки. 
 
-## 🏗️ Архитектура (SOLID)
+**Архитектура:**
+- **Frontend** — React + Nginx (статика + reverse proxy)
+- **Backend** — Node.js + Express API
+- **Database** — PostgreSQL (по умолчанию), MySQL, MongoDB, SQLite
+
+Поддерживает Docker-развёртывание, HTTPS, админ-панель с настраиваемым URL.
+
+## 🏗️ Архитектура
+
+### Микросервисная архитектура
+
+Приложение разделено на три независимых контейнера:
+
+```
+┌─────────────┐      ┌─────────────┐      ┌─────────────┐
+│  Frontend   │─────▶│   Backend   │─────▶│  Database   │
+│   (Nginx)   │      │  (Node.js)  │      │ (PostgreSQL)│
+│   Port 80   │      │  Port 3001  │      │  Port 5432  │
+└─────────────┘      └─────────────┘      └─────────────┘
+     React               Express            Multi-DB
+   Static files         REST API           (SQLite/PG/
+   Reverse proxy        JWT Auth            MySQL/Mongo)
+```
+
+**Преимущества:**
+- 🚀 **Независимое масштабирование** — можно запустить несколько инстансов backend
+- 🔄 **Быстрые обновления** — frontend и backend обновляются отдельно
+- 🛡️ **Изоляция** — проблемы в одном контейнере не влияют на другие
+- 📦 **Оптимизация** — каждый контейнер использует только нужные зависимости
+- 🔧 **Гибкость** — можно заменить Nginx на другой reverse proxy
+
+### Принципы SOLID
 
 | Принцип | Реализация |
 |---------|-----------|
@@ -63,9 +94,11 @@
 │   ├── setup-letsencrypt.sh      # Let's Encrypt SSL
 │   └── setup-selfsigned.sh       # Self-signed SSL
 │
-├── Dockerfile                    # Multi-stage build
-├── docker-compose.yml            # SQLite (default)
-├── docker-compose.postgres.yml   # PostgreSQL
+├── Dockerfile.frontend           # Frontend: Nginx + React
+├── Dockerfile.backend            # Backend: Node.js + Express
+├── nginx.conf                    # Nginx конфигурация (reverse proxy)
+├── docker-compose.yml            # PostgreSQL (default)
+├── docker-compose.sqlite.yml     # SQLite
 ├── docker-compose.mysql.yml      # MySQL
 ├── docker-compose.mongo.yml      # MongoDB
 ├── .env.example                  # Конфигурация
@@ -92,13 +125,22 @@ docker compose -f docker-compose.mongo.yml up -d
 
 ### Разработка:
 
-```bash
-# Frontend
-npm install && npm run dev
+Frontend и backend можно разрабатывать параллельно:
 
-# Backend (в другом терминале)
-cd server && npm install && npm run dev
+```bash
+# Терминал 1: Frontend (React + Vite)
+npm install
+npm run dev
+# Запустится на http://localhost:3000
+
+# Терминал 2: Backend (Express)
+cd server
+npm install
+npm run dev
+# Запустится на http://localhost:3001
 ```
+
+Frontend автоматически проксирует `/api` запросы на backend через Vite dev server.
 
 ## 🔐 HTTPS / SSL
 
@@ -198,6 +240,15 @@ chmod +x scripts/setup-letsencrypt.sh
 
 ## 🐳 Docker Compose варианты
 
+### Архитектура контейнеров
+
+Каждый вариант использует три контейнера:
+- **frontend** — Nginx, отдаёт React приложение и проксирует `/api` на backend
+- **backend** — Node.js Express API сервер
+- **database** — выбранная СУБД (PostgreSQL/MySQL/MongoDB/SQLite)
+
+### Запуск
+
 ```bash
 # PostgreSQL (по умолчанию)
 docker compose up -d
@@ -212,26 +263,39 @@ docker compose -f docker-compose.mysql.yml up -d
 docker compose -f docker-compose.mongo.yml up -d
 ```
 
+### Масштабирование
+
+Frontend и backend можно масштабировать независимо:
+
+```bash
+# Запустить 3 инстанса backend
+docker compose up -d --scale backend=3
+```
+
 ## 🔧 Переменные окружения
 
+### Frontend (Nginx)
+```env
+PORT=80                 # Порт для HTTP (по умолчанию 80)
+```
+
+### Backend (Node.js)
 ```env
 # Сервер
-PORT=3001
+PORT=3001               # Внутренний порт API
 HOST=0.0.0.0
 NODE_ENV=production
 
 # База данных
-DB_TYPE=sqlite          # sqlite | postgres | mysql | mongodb
-DB_HOST=localhost       # Для postgres/mysql
+DB_TYPE=postgres        # sqlite | postgres | mysql | mongodb
+DB_HOST=postgres        # Хост БД (имя контейнера в Docker)
 DB_PORT=5432
 DB_NAME=quickshare
 DB_USER=quickshare
 DB_PASSWORD=secret
-DB_MONGO_URI=mongodb://localhost:27017/quickshare  # Для mongodb
+DB_MONGO_URI=mongodb://mongo:27017/quickshare  # Для mongodb
 
-# Админ
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD=admin123
+# Безопасность
 JWT_SECRET=change-me-in-production
 
 # SSL
@@ -239,7 +303,7 @@ SSL_CERT=/app/certs/cert.pem
 SSL_KEY=/app/certs/key.pem
 
 # Сеть
-CORS_ORIGIN=*
+CORS_ORIGIN=http://frontend  # Для Docker, или * для разработки
 ```
 
 ## 🛡️ Безопасность
