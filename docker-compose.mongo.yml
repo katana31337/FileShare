@@ -1,15 +1,46 @@
 # ============================================
 # QuickShare — Docker Compose with MongoDB
 # ============================================
+# Architecture:
+#   - frontend: Nginx serving React app + reverse proxy
+#   - backend: Node.js Express API server
+#   - mongo: MongoDB database
+#
+# Usage:
+#   docker compose -f docker-compose.mongo.yml up -d
+#   docker compose -f docker-compose.mongo.yml down
+
 version: '3.8'
 
 services:
-  quickshare:
-    build: .
-    container_name: quickshare
+  # Frontend - Nginx serving React app
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: quickshare-frontend
     restart: unless-stopped
     ports:
-      - "${PORT:-3001}:3001"
+      - "${PORT:-80}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - quickshare_net
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
+  # Backend - Node.js Express API
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: quickshare-backend
+    restart: unless-stopped
     environment:
       - NODE_ENV=production
       - PORT=3001
@@ -17,22 +48,31 @@ services:
       - DB_TYPE=mongodb
       - DB_MONGO_URI=mongodb://mongo:27017/quickshare
       - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
-      - CORS_ORIGIN=${CORS_ORIGIN:-*}
+      - CORS_ORIGIN=${CORS_ORIGIN:-http://frontend}
+      - SSL_CERT=${SSL_CERT:-}
+      - SSL_KEY=${SSL_KEY:-}
     volumes:
-      - quickshare_uploads:/app/data/uploads
+      - backend_uploads:/app/data/uploads
       - ./certs:/app/certs:ro
     depends_on:
       mongo:
         condition: service_healthy
     networks:
       - quickshare_net
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
+  # Database - MongoDB
   mongo:
     image: mongo:7
     container_name: quickshare-db
     restart: unless-stopped
     volumes:
-      - mongo_data:/data/db
+      - mongo_/data/db
     networks:
       - quickshare_net
     healthcheck:
@@ -42,9 +82,9 @@ services:
       retries: 5
 
 volumes:
-  mongo_data:
+  mongo_
     driver: local
-  quickshare_uploads:
+  backend_uploads:
     driver: local
 
 networks:
