@@ -8,43 +8,43 @@ describe('ShortLinkService', () => {
   });
 
   describe('generate', () => {
-    it('should generate an 8-character ID by default', () => {
+    it('должен генерировать 8-символьный ID по умолчанию', () => {
       const id = shortLinkService.generate();
       
       expect(id).toHaveLength(8);
       expect(typeof id).toBe('string');
     });
 
-    it('should generate unique IDs', () => {
+    it('должен генерировать уникальные ID', () => {
       const ids = new Set<string>();
       
       for (let i = 0; i < 100; i++) {
         ids.add(shortLinkService.generate());
       }
       
-      // All IDs should be unique
+      // Все ID должны быть уникальными
       expect(ids.size).toBe(100);
     });
 
-    it('should only contain alphanumeric characters', () => {
+    it('должен содержать только буквенно-цифровые символы', () => {
       const id = shortLinkService.generate();
       
       expect(id).toMatch(/^[A-Za-z0-9]+$/);
     });
 
-    it('should not contain ambiguous characters (0, O, I, l, 1)', () => {
-      // Generate many IDs and check for ambiguous characters
+    it('не должен содержать неоднозначные символы (0, O, I, l, 1)', () => {
+      // Генерируем много ID и проверяем на неоднозначные символы
       for (let i = 0; i < 100; i++) {
         const id = shortLinkService.generate();
         
-        // Should not contain 0, O, I, l (lowercase L)
+        // Не должен содержать 0, O, I, l (строчная L)
         expect(id).not.toMatch(/[0OIl]/);
       }
     });
   });
 
   describe('generateCustom', () => {
-    it('should generate ID with custom length', () => {
+    it('должен генерировать ID с пользовательской длиной', () => {
       const id4 = shortLinkService.generateCustom(4);
       const id12 = shortLinkService.generateCustom(12);
       const id20 = shortLinkService.generateCustom(20);
@@ -54,7 +54,7 @@ describe('ShortLinkService', () => {
       expect(id20).toHaveLength(20);
     });
 
-    it('should use default length when not specified', () => {
+    it('должен использовать длину по умолчанию, если не указана', () => {
       const id = shortLinkService.generateCustom();
       
       expect(id).toHaveLength(8);
@@ -62,32 +62,32 @@ describe('ShortLinkService', () => {
   });
 
   describe('isValid', () => {
-    it('should accept valid IDs', () => {
+    it('должен принимать валидные ID', () => {
       expect(shortLinkService.isValid('abcd1234')).toBe(true);
       expect(shortLinkService.isValid('ABCDEFGH')).toBe(true);
       expect(shortLinkService.isValid('aB3dEf7h')).toBe(true);
     });
 
-    it('should reject IDs with invalid characters', () => {
+    it('должен отклонять ID с недопустимыми символами', () => {
       expect(shortLinkService.isValid('abc-1234')).toBe(false);
       expect(shortLinkService.isValid('abc_1234')).toBe(false);
       expect(shortLinkService.isValid('abc 1234')).toBe(false);
       expect(shortLinkService.isValid('abc!1234')).toBe(false);
     });
 
-    it('should reject IDs that are too short', () => {
+    it('должен отклонять слишком короткие ID', () => {
       expect(shortLinkService.isValid('abc')).toBe(false);
       expect(shortLinkService.isValid('')).toBe(false);
     });
 
-    it('should reject IDs that are too long', () => {
+    it('должен отклонять слишком длинные ID', () => {
       const longId = 'a'.repeat(21);
       expect(shortLinkService.isValid(longId)).toBe(false);
     });
 
-    it('should accept IDs at boundary lengths', () => {
-      expect(shortLinkService.isValid('abcd')).toBe(true); // 4 chars - minimum
-      expect(shortLinkService.isValid('a'.repeat(20))).toBe(true); // 20 chars - maximum
+    it('должен принимать ID на граничных длинах', () => {
+      expect(shortLinkService.isValid('abcd')).toBe(true); // 4 символа - минимум
+      expect(shortLinkService.isValid('a'.repeat(20))).toBe(true); // 20 символов - максимум
     });
   });
 });

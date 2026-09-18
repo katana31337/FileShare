@@ -2,7 +2,7 @@ import { PasswordValidator } from '../PasswordValidator';
 
 describe('PasswordValidator', () => {
   describe('validate', () => {
-    it('should accept strong password', () => {
+    it('должен принимать надёжный пароль', () => {
       const result = PasswordValidator.validate('MyStr0ng!Pass');
       
       expect(result.isValid).toBe(true);
@@ -15,7 +15,7 @@ describe('PasswordValidator', () => {
       expect(result.requirements.notCommon).toBe(true);
     });
 
-    it('should reject password without uppercase', () => {
+    it('должен отклонять пароль без заглавных букв', () => {
       const result = PasswordValidator.validate('mystr0ng!pass');
       
       expect(result.isValid).toBe(false);
@@ -23,7 +23,7 @@ describe('PasswordValidator', () => {
       expect(result.feedback).toContain('Добавьте заглавную букву (A-Z)');
     });
 
-    it('should reject password without lowercase', () => {
+    it('должен отклонять пароль без строчных букв', () => {
       const result = PasswordValidator.validate('MYSTR0NG!PASS');
       
       expect(result.isValid).toBe(false);
@@ -31,7 +31,7 @@ describe('PasswordValidator', () => {
       expect(result.feedback).toContain('Добавьте строчную букву (a-z)');
     });
 
-    it('should reject password without number', () => {
+    it('должен отклонять пароль без цифр', () => {
       const result = PasswordValidator.validate('MyStrong!Pass');
       
       expect(result.isValid).toBe(false);
@@ -39,7 +39,7 @@ describe('PasswordValidator', () => {
       expect(result.feedback).toContain('Добавьте цифру (0-9)');
     });
 
-    it('should reject password without special character', () => {
+    it('должен отклонять пароль без спецсимволов', () => {
       const result = PasswordValidator.validate('MyStr0ngPass');
       
       expect(result.isValid).toBe(false);
@@ -47,7 +47,7 @@ describe('PasswordValidator', () => {
       expect(result.feedback).toContain('Добавьте специальный символ (!@#$%^&*)');
     });
 
-    it('should reject short password', () => {
+    it('должен отклонять короткий пароль', () => {
       const result = PasswordValidator.validate('My1!');
       
       expect(result.isValid).toBe(false);
@@ -55,7 +55,7 @@ describe('PasswordValidator', () => {
       expect(result.feedback).toContain('Минимум 8 символов');
     });
 
-    it('should reject common password', () => {
+    it('должен отклонять распространённый пароль', () => {
       const result = PasswordValidator.validate('password123!');
       
       expect(result.isValid).toBe(false);
@@ -63,28 +63,28 @@ describe('PasswordValidator', () => {
       expect(result.feedback).toContain('Этот пароль слишком распространён');
     });
 
-    it('should reject "12345678"', () => {
+    it('должен отклонять "12345678"', () => {
       const result = PasswordValidator.validate('12345678');
       
       expect(result.isValid).toBe(false);
       expect(result.requirements.notCommon).toBe(false);
     });
 
-    it('should reject "admin123"', () => {
+    it('должен отклонять "admin123"', () => {
       const result = PasswordValidator.validate('admin123');
       
       expect(result.isValid).toBe(false);
       expect(result.requirements.notCommon).toBe(false);
     });
 
-    it('should calculate score correctly', () => {
+    it('должен корректно рассчитывать оценку', () => {
       const weakResult = PasswordValidator.validate('weak');
       const strongResult = PasswordValidator.validate('MyStr0ng!Pass123');
       
       expect(weakResult.score).toBeLessThan(strongResult.score);
     });
 
-    it('should handle empty password', () => {
+    it('должен обрабатывать пустой пароль', () => {
       const result = PasswordValidator.validate('');
       
       expect(result.isValid).toBe(false);
@@ -93,37 +93,37 @@ describe('PasswordValidator', () => {
   });
 
   describe('getStrengthLabel', () => {
-    it('should return "Очень слабый" for score < 30', () => {
+    it('должен возвращать "Очень слабый" для оценки < 30', () => {
       const result = PasswordValidator.getStrengthLabel(20);
       expect(result.label).toBe('Очень слабый');
       expect(result.color).toBe('red');
     });
 
-    it('should return "Слабый" for score 30-49', () => {
+    it('должен возвращать "Слабый" для оценки 30-49', () => {
       const result = PasswordValidator.getStrengthLabel(40);
       expect(result.label).toBe('Слабый');
       expect(result.color).toBe('orange');
     });
 
-    it('should return "Средний" for score 50-69', () => {
+    it('должен возвращать "Средний" для оценки 50-69', () => {
       const result = PasswordValidator.getStrengthLabel(60);
       expect(result.label).toBe('Средний');
       expect(result.color).toBe('yellow');
     });
 
-    it('should return "Сильный" for score 70-89', () => {
+    it('должен возвращать "Сильный" для оценки 70-89', () => {
       const result = PasswordValidator.getStrengthLabel(80);
       expect(result.label).toBe('Сильный');
       expect(result.color).toBe('green');
     });
 
-    it('should return "Очень сильный" for score >= 90', () => {
+    it('должен возвращать "Очень сильный" для оценки >= 90', () => {
       const result = PasswordValidator.getStrengthLabel(95);
       expect(result.label).toBe('Очень сильный');
       expect(result.color).toBe('emerald');
     });
 
-    it('should handle edge cases', () => {
+    it('должен обрабатывать граничные значения', () => {
       expect(PasswordValidator.getStrengthLabel(0).label).toBe('Очень слабый');
       expect(PasswordValidator.getStrengthLabel(100).label).toBe('Очень сильный');
     });
