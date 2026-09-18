@@ -1,4 +1,9 @@
 import '@testing-library/jest-dom';
+import { TextEncoder, TextDecoder } from 'util';
+
+// Mock TextEncoder/TextDecoder
+global.TextEncoder = TextEncoder;
+global.TextDecoder = TextDecoder;
 
 // Mock Web Crypto API
 const cryptoMock = {
@@ -19,7 +24,3 @@ const cryptoMock = {
 Object.defineProperty(global, 'crypto', {
   value: cryptoMock,
 });
-
-// Mock TextEncoder/TextDecoder
-global.TextEncoder = TextEncoder;
-global.TextDecoder = TextDecoder;
