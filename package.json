@@ -7,6 +7,7 @@
     "build": "vite build",
     "typecheck": "tsc --noEmit",
     "test": "jest",
+    "test:full": "jest -- --full",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage"
   },
