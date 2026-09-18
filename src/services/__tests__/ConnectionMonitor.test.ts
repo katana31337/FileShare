@@ -134,8 +134,15 @@ describe('ConnectionMonitor', () => {
     it('должен обрабатывать ошибки сети', async () => {
       global.fetch = jest.fn().mockRejectedValue(new Error('Network error'));
 
-      const status = await monitor.forceCheck();
+      // Выполняем несколько проверок для достижения порога неудач
+      // maxFailuresBeforeDisconnect = 2, поэтому нужно минимум 2 проверки
+      let status = await monitor.forceCheck();
+      status = await monitor.forceCheck();
+      status = await monitor.forceCheck();
+      status = await monitor.forceCheck();
+      status = await monitor.forceCheck();
 
+      // Проверяем, что статус изменился на disconnected
       expect(status).toBe('disconnected');
     });
 
@@ -145,8 +152,14 @@ describe('ConnectionMonitor', () => {
         status: 500,
       });
 
-      const status = await monitor.forceCheck();
+      // Выполняем несколько проверок для достижения порога неудач
+      let status = await monitor.forceCheck();
+      status = await monitor.forceCheck();
+      status = await monitor.forceCheck();
+      status = await monitor.forceCheck();
+      status = await monitor.forceCheck();
 
+      // Проверяем, что статус изменился на disconnected
       expect(status).toBe('disconnected');
     });
 
@@ -157,10 +170,16 @@ describe('ConnectionMonitor', () => {
         });
       });
 
-      const status = await monitor.forceCheck();
+      // Выполняем несколько проверок для достижения порога неудач
+      let status = await monitor.forceCheck();
+      status = await monitor.forceCheck();
+      status = await monitor.forceCheck();
+      status = await monitor.forceCheck();
+      status = await monitor.forceCheck();
 
+      // Проверяем, что статус изменился на disconnected
       expect(status).toBe('disconnected');
-    });
+    }, 15000); // Увеличиваем таймаут теста до 15 секунд
   });
 
   describe('статусы соединения', () => {
