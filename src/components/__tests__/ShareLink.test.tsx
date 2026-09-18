@@ -100,11 +100,15 @@ describe('ShareLink', () => {
 
   it('должен обрабатывать ошибку копирования', async () => {
     // Mock clipboard error
+    const mockWriteText = jest.fn().mockRejectedValue(new Error('Clipboard error'));
     Object.assign(navigator, {
       clipboard: {
-        writeText: jest.fn().mockRejectedValue(new Error('Clipboard error')),
+        writeText: mockWriteText,
       },
     });
+
+    // Mock document.execCommand для fallback
+    document.execCommand = jest.fn();
 
     render(<ShareLink {...defaultProps} />);
     

@@ -1,15 +1,28 @@
-import { ConnectionMonitor, ConnectionStatus } from '../ConnectionMonitor';
+import { ConnectionMonitor } from '../ConnectionMonitor';
 
 describe('ConnectionMonitor', () => {
   let monitor: ConnectionMonitor;
+  let originalFetch: typeof global.fetch;
 
   beforeEach(() => {
+    // Сохраняем оригинальный fetch
+    originalFetch = global.fetch;
+    
+    // Создаём новый экземпляр монитора
     monitor = new ConnectionMonitor();
+    
+    // Используем fake timers
     jest.useFakeTimers();
   });
 
   afterEach(() => {
+    // Восстанавливаем оригинальный fetch
+    global.fetch = originalFetch;
+    
+    // Останавливаем монитор
     monitor.stop();
+    
+    // Восстанавливаем реальные таймеры
     jest.useRealTimers();
   });
 
@@ -69,17 +82,16 @@ describe('ConnectionMonitor', () => {
 
   describe('forceCheck', () => {
     it('должен выполнять принудительную проверку', async () => {
-      const fetchSpy = jest.spyOn(global, 'fetch').mockResolvedValue({
+      // Mock fetch
+      global.fetch = jest.fn().mockResolvedValue({
         ok: true,
         json: async () => ({ status: 'ok' }),
-      } as Response);
+      });
 
       const status = await monitor.forceCheck();
 
-      expect(fetchSpy).toHaveBeenCalledWith('/api/health', expect.any(Object));
+      expect(global.fetch).toHaveBeenCalledWith('/api/health', expect.any(Object));
       expect(status).toBeDefined();
-      
-      fetchSpy.mockRestore();
     });
   });
 
@@ -88,24 +100,24 @@ describe('ConnectionMonitor', () => {
       const callback = jest.fn();
       monitor.on('statusChange', callback);
 
-      jest.spyOn(global, 'fetch').mockResolvedValue({
+      global.fetch = jest.fn().mockResolvedValue({
         ok: true,
         json: async () => ({ status: 'ok' }),
-      } as Response);
+      });
 
       await monitor.forceCheck();
 
       expect(callback).toHaveBeenCalled();
     });
 
-    it('долген передавать информацию о статусе в событии', async () => {
+    it('должен передавать информацию о статусе в событии', async () => {
       const callback = jest.fn();
       monitor.on('statusChange', callback);
 
-      jest.spyOn(global, 'fetch').mockResolvedValue({
+      global.fetch = jest.fn().mockResolvedValue({
         ok: true,
         json: async () => ({ status: 'ok' }),
-      } as Response);
+      });
 
       await monitor.forceCheck();
 
@@ -120,7 +132,7 @@ describe('ConnectionMonitor', () => {
 
   describe('обработка ошибок', () => {
     it('должен обрабатывать ошибки сети', async () => {
-      jest.spyOn(global, 'fetch').mockRejectedValue(new Error('Network error'));
+      global.fetch = jest.fn().mockRejectedValue(new Error('Network error'));
 
       const status = await monitor.forceCheck();
 
@@ -128,10 +140,10 @@ describe('ConnectionMonitor', () => {
     });
 
     it('должен обрабатывать невалидные ответы', async () => {
-      jest.spyOn(global, 'fetch').mockResolvedValue({
+      global.fetch = jest.fn().mockResolvedValue({
         ok: false,
         status: 500,
-      } as Response);
+      });
 
       const status = await monitor.forceCheck();
 
@@ -139,7 +151,7 @@ describe('ConnectionMonitor', () => {
     });
 
     it('должен обрабатывать таймауты', async () => {
-      jest.spyOn(global, 'fetch').mockImplementation(() => {
+      global.fetch = jest.fn().mockImplementation(() => {
         return new Promise((_, reject) => {
           setTimeout(() => reject(new Error('Timeout')), 100);
         });
@@ -153,10 +165,10 @@ describe('ConnectionMonitor', () => {
 
   describe('статусы соединения', () => {
     it('должен устанавливать статус "connected" при успешной проверке', async () => {
-      jest.spyOn(global, 'fetch').mockResolvedValue({
+      global.fetch = jest.fn().mockResolvedValue({
         ok: true,
         json: async () => ({ status: 'ok' }),
-      } as Response);
+      });
 
       await monitor.forceCheck();
 
@@ -164,10 +176,10 @@ describe('ConnectionMonitor', () => {
     });
 
     it('должен устанавливать статус "degraded" при проблемах с БД', async () => {
-      jest.spyOn(global, 'fetch').mockResolvedValue({
+      global.fetch = jest.fn().mockResolvedValue({
         ok: true,
         json: async () => ({ status: 'degraded' }),
-      } as Response);
+      });
 
       await monitor.forceCheck();
 
@@ -175,7 +187,7 @@ describe('ConnectionMonitor', () => {
     });
 
     it('должен устанавливать статус "disconnected" при ошибке', async () => {
-      jest.spyOn(global, 'fetch').mockRejectedValue(new Error('Network error'));
+      global.fetch = jest.fn().mockRejectedValue(new Error('Network error'));
 
       // Выполняем несколько проверок для срабатывания порога
       for (let i = 0; i < 3; i++) {

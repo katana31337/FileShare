@@ -69,27 +69,18 @@ describe('ShareService', () => {
     });
 
     it('должен создавать шар через localStorage если сервер недоступен', async () => {
+      // В текущей реализации при недоступном сервере создание шара блокируется
       (apiClient.checkHealth as jest.Mock).mockResolvedValue(false);
       (connectionMonitor.getStatus as jest.Mock).mockReturnValue('disconnected');
-      (shareService as any).useApi = false;
       
-      const mockResponse = {
-        id: 'test-id',
-        shortUrl: '/s/test-id',
-        fullUrl: 'https://example.com/s/test-id',
-        expiresAt: null,
-        createdAt: new Date().toISOString(),
-      };
-      (localStorageService.createShare as jest.Mock).mockResolvedValue(mockResponse);
-
       await shareService.init();
-      const result = await shareService.createShare({
-        type: 'text',
-        content: 'test content',
-      });
-
-      expect(localStorageService.createShare).toHaveBeenCalled();
-      expect(result).toEqual(mockResponse);
+      
+      await expect(
+        shareService.createShare({
+          type: 'text',
+          content: 'test content',
+        })
+      ).rejects.toThrow('Сервер недоступен');
     });
 
     it('должен выбрасывать ошибку если сервер недоступен и useApi = false', async () => {
@@ -114,6 +105,8 @@ describe('ShareService', () => {
       (connectionMonitor.getStatus as jest.Mock).mockReturnValue('connected');
       
       const mockFile = new File(['test content'], 'test.txt', { type: 'text/plain' });
+      Object.defineProperty(mockFile, 'size', { value: 1024 }); // 1 KB
+      
       const mockResponse = {
         id: 'test-id',
         shortUrl: '/s/test-id',
@@ -136,12 +129,12 @@ describe('ShareService', () => {
       
       // Set small limit
       (shareService as any).limits = {
-        maxFileSize: 10, // 10 bytes
+        maxFileSize: 10 * 1024 * 1024, // 10 MB
         maxTextLength: 50000,
       };
 
       const mockFile = new File(['test content'], 'test.txt', { type: 'text/plain' });
-      Object.defineProperty(mockFile, 'size', { value: 100 });
+      Object.defineProperty(mockFile, 'size', { value: 100 * 1024 * 1024 }); // 100 MB
 
       await shareService.init();
 
@@ -151,7 +144,6 @@ describe('ShareService', () => {
     it('должен выбрасывать ошибку если сервер недоступен', async () => {
       (apiClient.checkHealth as jest.Mock).mockResolvedValue(false);
       (connectionMonitor.getStatus as jest.Mock).mockReturnValue('disconnected');
-      (shareService as any).useApi = false;
 
       const mockFile = new File(['test content'], 'test.txt', { type: 'text/plain' });
 

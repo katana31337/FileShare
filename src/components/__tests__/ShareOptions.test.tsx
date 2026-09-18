@@ -44,7 +44,10 @@ describe('ShareOptions', () => {
     const toggleButton = screen.getByText(/Дополнительные настройки/i);
     fireEvent.click(toggleButton);
     
-    const expirySelect = screen.getByLabelText(/Время жизни ссылки/i);
+    // Ищем select по роли вместо label
+    const selects = screen.getAllByRole('combobox');
+    const expirySelect = selects[0]; // Первый select - время жизни
+    
     fireEvent.change(expirySelect, { target: { value: '3600' } });
     
     expect(mockOnChange).toHaveBeenCalledWith(
@@ -60,7 +63,10 @@ describe('ShareOptions', () => {
     const toggleButton = screen.getByText(/Дополнительные настройки/i);
     fireEvent.click(toggleButton);
     
-    const downloadsSelect = screen.getByLabelText(/Лимит скачиваний/i);
+    // Ищем select по роли вместо label
+    const selects = screen.getAllByRole('combobox');
+    const downloadsSelect = selects[1]; // Второй select - лимит скачиваний
+    
     fireEvent.change(downloadsSelect, { target: { value: '5' } });
     
     expect(mockOnChange).toHaveBeenCalledWith(
@@ -76,7 +82,8 @@ describe('ShareOptions', () => {
     const toggleButton = screen.getByText(/Дополнительные настройки/i);
     fireEvent.click(toggleButton);
     
-    const passwordInput = screen.getByLabelText(/Пароль/i);
+    // Ищем input по placeholder вместо label
+    const passwordInput = screen.getByPlaceholderText(/Оставьте пустым/i);
     fireEvent.change(passwordInput, { target: { value: 'secret123' } });
     
     expect(mockOnChange).toHaveBeenCalledWith(
