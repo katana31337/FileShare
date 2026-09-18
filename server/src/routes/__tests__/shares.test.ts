@@ -82,7 +82,7 @@ describe('Shares API Endpoints', () => {
   describe('GET /api/shares/:id', () => {
     it('должен возвращать информацию о шаре', async () => {
       const mockShare = {
-        id: 'test-id',
+        id: 'testid123',
         type: 'text' as const,
         content: 'test content',
         file_name: null,
@@ -99,7 +99,7 @@ describe('Shares API Endpoints', () => {
 
       (database.findShareById as jest.Mock).mockResolvedValue(mockShare);
 
-      const response = await request(app).get('/api/shares/test-id');
+      const response = await request(app).get('/api/shares/testid123');
 
       expect(response.status).toBe(200);
       expect(response.body).toBeDefined();
@@ -118,7 +118,7 @@ describe('Shares API Endpoints', () => {
   describe('GET /api/shares/:id/download', () => {
     it('должен скачивать текстовый шар', async () => {
       const mockShare = {
-        id: 'test-id',
+        id: 'testid123',
         type: 'text' as const,
         content: 'test content',
         file_name: null,
@@ -136,7 +136,7 @@ describe('Shares API Endpoints', () => {
       (database.findShareById as jest.Mock).mockResolvedValue(mockShare);
       (database.incrementShareDownloads as jest.Mock).mockResolvedValue(undefined);
 
-      const response = await request(app).get('/api/shares/test-id/download');
+      const response = await request(app).get('/api/shares/testid123/download');
 
       expect(response.status).toBe(200);
       expect(response.body).toBeDefined();
