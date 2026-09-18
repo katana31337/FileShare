@@ -27,7 +27,7 @@ router.post('/', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'VALIDATION', message: 'Content is required for text shares' });
     }
 
-    if (maxDownloads && (maxDownloads < 1 || maxDownloads > 1000)) {
+    if (typeof maxDownloads === 'number' && (maxDownloads < 1 || maxDownloads > 1000)) {
       return res.status(400).json({ error: 'VALIDATION', message: 'Max downloads must be between 1 and 1000' });
     }
 
