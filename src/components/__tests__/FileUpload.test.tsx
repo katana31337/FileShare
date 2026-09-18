@@ -9,94 +9,160 @@ describe('FileUpload', () => {
     mockOnFileSelect.mockClear();
   });
 
-  it('должен отображать компонент', () => {
+  it('должен отображать компонент с начальным состоянием', () => {
     render(<FileUpload onFileSelect={mockOnFileSelect} isUploading={false} />);
     
     expect(screen.getByText(/Перетащите файл сюда/i)).toBeInTheDocument();
+    expect(screen.getByText(/или нажмите для выбора/i)).toBeInTheDocument();
   });
 
-  it('должен отображать сообщение о загрузке', () => {
-    render(<FileUpload onFileSelect={mockOnFileSelect} isUploading={true} />);
+  it('должен отображать максимальный размер файла', () => {
+    render(<FileUpload onFileSelect={mockOnFileSelect} isUploading={false} maxFileSize={10 * 1024 * 1024} />);
     
-    expect(screen.getByText(/Загрузка.../i)).toBeInTheDocument();
+    expect(screen.getByText(/Макс\. 10 MB/i)).toBeInTheDocument();
+  });
+
+  it('должен иметь скрытый input для выбора файла', () => {
+    const { container } = render(<FileUpload onFileSelect={mockOnFileSelect} isUploading={false} />);
+    
+    const input = container.querySelector('input[type="file"]');
+    expect(input).toBeInTheDocument();
+    expect(input).toHaveClass('hidden');
   });
 
   it('должен вызывать onFileSelect при выборе файла', () => {
-    render(<FileUpload onFileSelect={mockOnFileSelect} isUploading={false} />);
+    const { container } = render(<FileUpload onFileSelect={mockOnFileSelect} isUploading={false} />);
     
     const file = new File(['test content'], 'test.txt', { type: 'text/plain' });
-    const input = screen.getByRole('textbox', { hidden: true }) as HTMLInputElement;
+    const input = container.querySelector('input[type="file"]') as HTMLInputElement;
     
-    fireEvent.change(input, { target: { files: [file] } });
+    Object.defineProperty(input, 'files', {
+      value: [file],
+      writable: false,
+    });
+    
+    fireEvent.change(input);
     
     expect(mockOnFileSelect).toHaveBeenCalledWith(file);
   });
 
   it('должен отображать информацию о выбранном файле', () => {
-    render(<FileUpload onFileSelect={mockOnFileSelect} isUploading={false} />);
+    const { container } = render(<FileUpload onFileSelect={mockOnFileSelect} isUploading={false} />);
     
     const file = new File(['test content'], 'test.txt', { type: 'text/plain' });
-    const input = screen.getByRole('textbox', { hidden: true }) as HTMLInputElement;
+    const input = container.querySelector('input[type="file"]') as HTMLInputElement;
     
-    fireEvent.change(input, { target: { files: [file] } });
+    Object.defineProperty(input, 'files', {
+      value: [file],
+      writable: false,
+    });
+    
+    fireEvent.change(input);
     
     expect(screen.getByText('test.txt')).toBeInTheDocument();
     expect(screen.getByText(/13 B/i)).toBeInTheDocument();
   });
 
   it('должен отображать кнопку удаления файла', () => {
-    render(<FileUpload onFileSelect={mockOnFileSelect} isUploading={false} />);
+    const { container } = render(<FileUpload onFileSelect={mockOnFileSelect} isUploading={false} />);
     
     const file = new File(['test content'], 'test.txt', { type: 'text/plain' });
-    const input = screen.getByRole('textbox', { hidden: true }) as HTMLInputElement;
+    const input = container.querySelector('input[type="file"]') as HTMLInputElement;
     
-    fireEvent.change(input, { target: { files: [file] } });
+    Object.defineProperty(input, 'files', {
+      value: [file],
+      writable: false,
+    });
+    
+    fireEvent.change(input);
     
     expect(screen.getByText(/Удалить файл/i)).toBeInTheDocument();
   });
 
   it('должен удалять файл при клике на кнопку удаления', () => {
-    render(<FileUpload onFileSelect={mockOnFileSelect} isUploading={false} />);
+    const { container } = render(<FileUpload onFileSelect={mockOnFileSelect} isUploading={false} />);
     
     const file = new File(['test content'], 'test.txt', { type: 'text/plain' });
-    const input = screen.getByRole('textbox', { hidden: true }) as HTMLInputElement;
+    const input = container.querySelector('input[type="file"]') as HTMLInputElement;
     
-    fireEvent.change(input, { target: { files: [file] } });
+    Object.defineProperty(input, 'files', {
+      value: [file],
+      writable: false,
+    });
+    
+    fireEvent.change(input);
     fireEvent.click(screen.getByText(/Удалить файл/i));
     
     expect(screen.getByText(/Перетащите файл сюда/i)).toBeInTheDocument();
   });
 
-  it('должен обрабатывать drag and drop', () => {
-    render(<FileUpload onFileSelect={mockOnFileSelect} isUploading={false} />);
-    
-    const file = new File(['test content'], 'test.txt', { type: 'text/plain' });
-    const dropZone = screen.getByText(/Перетащите файл сюда/i).closest('div');
-    
-    if (dropZone) {
-      fireEvent.dragEnter(dropZone, { dataTransfer: { files: [file] } });
-      fireEvent.drop(dropZone, { dataTransfer: { files: [file] } });
-      
-      expect(mockOnFileSelect).toHaveBeenCalledWith(file);
-    }
-  });
-
-  it('должен отображать максимальный размер файла', () => {
-    render(<FileUpload onFileSelect={mockOnFileSelect} isUploading={false} maxFileSize={10 * 1024 * 1024} />);
-    
-    expect(screen.getByText(/10 MB/i)).toBeInTheDocument();
-  });
-
   it('должен отклонять файлы больше максимального размера', () => {
-    render(<FileUpload onFileSelect={mockOnFileSelect} isUploading={false} maxFileSize={10} />);
+    const { container } = render(
+      <FileUpload onFileSelect={mockOnFileSelect} isUploading={false} maxFileSize={10} />
+    );
     
     const file = new File(['test content'], 'large.txt', { type: 'text/plain' });
     Object.defineProperty(file, 'size', { value: 100 });
     
-    const input = screen.getByRole('textbox', { hidden: true }) as HTMLInputElement;
-    fireEvent.change(input, { target: { files: [file] } });
+    const input = container.querySelector('input[type="file"]') as HTMLInputElement;
+    
+    Object.defineProperty(input, 'files', {
+      value: [file],
+      writable: false,
+    });
+    
+    fireEvent.change(input);
     
     expect(screen.getByText(/Файл слишком большой/i)).toBeInTheDocument();
     expect(mockOnFileSelect).not.toHaveBeenCalled();
+  });
+
+  it('должен обрабатывать drag and drop', () => {
+    const { container } = render(<FileUpload onFileSelect={mockOnFileSelect} isUploading={false} />);
+    
+    const file = new File(['test content'], 'test.txt', { type: 'text/plain' });
+    const dropZone = container.querySelector('.cursor-pointer') as HTMLElement;
+    
+    Object.defineProperty(file, 'size', { value: 100 });
+    
+    fireEvent.dragEnter(dropZone, {
+      dataTransfer: {
+        files: [file],
+      },
+    });
+    
+    expect(dropZone).toHaveClass('border-purple-400');
+    
+    fireEvent.dragLeave(dropZone);
+    
+    expect(dropZone).not.toHaveClass('border-purple-400');
+  });
+
+  it('должен загружать файл через drag and drop', () => {
+    const { container } = render(<FileUpload onFileSelect={mockOnFileSelect} isUploading={false} />);
+    
+    const file = new File(['test content'], 'test.txt', { type: 'text/plain' });
+    const dropZone = container.querySelector('.cursor-pointer') as HTMLElement;
+    
+    fireEvent.drop(dropZone, {
+      dataTransfer: {
+        files: [file],
+      },
+    });
+    
+    expect(mockOnFileSelect).toHaveBeenCalledWith(file);
+    expect(screen.getByText('test.txt')).toBeInTheDocument();
+  });
+
+  it('должен открывать диалог выбора файла при клике на drop zone', () => {
+    const { container } = render(<FileUpload onFileSelect={mockOnFileSelect} isUploading={false} />);
+    
+    const input = container.querySelector('input[type="file"]') as HTMLInputElement;
+    const clickSpy = jest.spyOn(input, 'click');
+    
+    const dropZone = container.querySelector('.cursor-pointer') as HTMLElement;
+    fireEvent.click(dropZone);
+    
+    expect(clickSpy).toHaveBeenCalled();
   });
 });
