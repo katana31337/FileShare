@@ -164,11 +164,8 @@ describe('ConnectionMonitor', () => {
     });
 
     it('должен обрабатывать таймауты', async () => {
-      global.fetch = jest.fn().mockImplementation(() => {
-        return new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Timeout')), 100);
-        });
-      });
+      // Используем быстрый reject вместо setTimeout
+      global.fetch = jest.fn().mockRejectedValue(new Error('Timeout'));
 
       // Выполняем несколько проверок для достижения порога неудач
       let status = await monitor.forceCheck();
@@ -179,7 +176,7 @@ describe('ConnectionMonitor', () => {
 
       // Проверяем, что статус изменился на disconnected
       expect(status).toBe('disconnected');
-    }, 15000); // Увеличиваем таймаут теста до 15 секунд
+    });
   });
 
   describe('статусы соединения', () => {
