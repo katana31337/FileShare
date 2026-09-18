@@ -40,7 +40,7 @@ describe('Shares API Endpoints', () => {
     it('должен создавать текстовый шар', async () => {
       const mockShare = {
         id: 'test-id',
-        type: 'text',
+        type: 'text' as const,
         content: 'test content',
         file_name: null,
         file_size: null,
@@ -97,7 +97,7 @@ describe('Shares API Endpoints', () => {
     it('должен возвращать информацию о шаре', async () => {
       const mockShare = {
         id: 'test-id',
-        type: 'text',
+        type: 'text' as const,
         content: 'test content',
         file_name: null,
         file_size: null,
@@ -133,7 +133,7 @@ describe('Shares API Endpoints', () => {
     it('должен скачивать текстовый шар', async () => {
       const mockShare = {
         id: 'test-id',
-        type: 'text',
+        type: 'text' as const,
         content: 'test content',
         file_name: null,
         file_size: null,

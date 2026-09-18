@@ -1,35 +1,26 @@
 import ShareService from '../ShareService';
-import { IDatabaseAdapter, ShareRecord } from '../../db/adapters/IDatabaseAdapter';
+import { ShareRecord } from '../../db/adapters/IDatabaseAdapter';
+import { database } from '../../db/database';
+
+// Mock database module
+jest.mock('../../db/database', () => ({
+  database: {
+    createShare: jest.fn(),
+    findShareById: jest.fn(),
+    incrementShareDownloads: jest.fn(),
+    deleteShare: jest.fn(),
+    listShares: jest.fn(),
+    cleanupExpired: jest.fn(),
+  },
+}));
+
+const mockDb = database as jest.Mocked<typeof database>;
 
 describe('ShareService', () => {
   let shareService: ShareService;
-  let mockDb: jest.Mocked<IDatabaseAdapter>;
 
   beforeEach(() => {
-    mockDb = {
-      connect: jest.fn(),
-      disconnect: jest.fn(),
-      isHealthy: jest.fn(),
-      createShare: jest.fn(),
-      findShareById: jest.fn(),
-      incrementShareDownloads: jest.fn(),
-      deleteShare: jest.fn(),
-      listShares: jest.fn(),
-      cleanupExpired: jest.fn(),
-      getSetting: jest.fn(),
-      setSetting: jest.fn(),
-      getAllSettings: jest.fn(),
-      getSettingsByCategory: jest.fn(),
-      deleteSetting: jest.fn(),
-      createAdmin: jest.fn(),
-      findAdminByUsername: jest.fn(),
-      findAdminById: jest.fn(),
-      updateAdminLastLogin: jest.fn(),
-      changeAdminPassword: jest.fn(),
-      getStats: jest.fn(),
-    };
-
-    shareService = new ShareService(mockDb);
+    shareService = new ShareService();
   });
 
   describe('createShare', () => {
@@ -292,97 +283,8 @@ describe('ShareService', () => {
     });
   });
 
-  describe('deleteShare', () => {
-    it('должен удалять шар', async () => {
-      mockDb.deleteShare.mockResolvedValue(undefined);
-
-      await shareService.deleteShare('test-id');
-
-      expect(mockDb.deleteShare).toHaveBeenCalledWith('test-id');
-    });
-  });
-
-  describe('listShares', () => {
-    it('должен возвращать список шаров', async () => {
-      const mockShares: ShareRecord[] = [
-        {
-          id: 'test-id-1',
-          type: 'text',
-          content: 'content 1',
-          file_name: null,
-          file_size: null,
-          mime_type: null,
-          file_path: null,
-          password_hash: null,
-          max_downloads: null,
-          downloads: 0,
-          created_at: new Date().toISOString(),
-          expires_at: null,
-          e2e_encrypted: false,
-        },
-        {
-          id: 'test-id-2',
-          type: 'file',
-          content: null,
-          file_name: 'test.pdf',
-          file_size: 1024,
-          mime_type: 'application/pdf',
-          file_path: '/path/to/file',
-          password_hash: null,
-          max_downloads: null,
-          downloads: 0,
-          created_at: new Date().toISOString(),
-          expires_at: null,
-          e2e_encrypted: false,
-        },
-      ];
-
-      mockDb.listShares.mockResolvedValue(mockShares);
-
-      const result = await shareService.listShares();
-
-      expect(result).toHaveLength(2);
-      expect(result[0].id).toBe('test-id-1');
-      expect(result[1].id).toBe('test-id-2');
-    });
-
-    it('должен поддерживать фильтрацию по типу', async () => {
-      const mockShares: ShareRecord[] = [
-        {
-          id: 'test-id-1',
-          type: 'text',
-          content: 'content 1',
-          file_name: null,
-          file_size: null,
-          mime_type: null,
-          file_path: null,
-          password_hash: null,
-          max_downloads: null,
-          downloads: 0,
-          created_at: new Date().toISOString(),
-          expires_at: null,
-          e2e_encrypted: false,
-        },
-      ];
-
-      mockDb.listShares.mockResolvedValue(mockShares);
-
-      const result = await shareService.listShares({ type: 'text' });
-
-      expect(mockDb.listShares).toHaveBeenCalledWith(expect.objectContaining({ type: 'text' }));
-    });
-  });
-
-  describe('cleanupExpired', () => {
-    it('должен удалять истёкшие шары', async () => {
-      mockDb.cleanupExpired.mockResolvedValue(5);
-
-      const deleted = await shareService.cleanupExpired();
-
-      expect(deleted).toBe(5);
-      expect(mockDb.cleanupExpired).toHaveBeenCalled();
-    });
-  });
+  // deleteShare, listShares, cleanupExpired не существуют в ShareService
+  // Эти методы находятся в database adapter
 
   describe('cleanupOldHistory', () => {
     it('должен удалять шары старше указанного срока', async () => {
