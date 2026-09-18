@@ -1,4 +1,4 @@
-import { ShareService } from '../ShareService';
+import ShareService from '../ShareService';
 import { IDatabaseAdapter, ShareRecord } from '../../db/adapters/IDatabaseAdapter';
 
 describe('ShareService', () => {
@@ -47,6 +47,7 @@ describe('ShareService', () => {
         downloads: 0,
         created_at: new Date().toISOString(),
         expires_at: null,
+        e2e_encrypted: false,
       };
 
       mockDb.createShare.mockResolvedValue(mockShare);
@@ -75,6 +76,7 @@ describe('ShareService', () => {
         downloads: 0,
         created_at: new Date().toISOString(),
         expires_at: null,
+        e2e_encrypted: false,
       };
 
       mockDb.createShare.mockResolvedValue(mockShare);
@@ -107,6 +109,7 @@ describe('ShareService', () => {
         downloads: 0,
         created_at: new Date().toISOString(),
         expires_at: null,
+        e2e_encrypted: false,
       };
 
       mockDb.createShare.mockResolvedValue(mockShare);
@@ -139,6 +142,7 @@ describe('ShareService', () => {
         downloads: 0,
         created_at: new Date().toISOString(),
         expires_at: new Date(Date.now() + 3600000).toISOString(), // 1 hour
+        e2e_encrypted: false,
       };
 
       mockDb.createShare.mockResolvedValue(mockShare);
@@ -169,6 +173,7 @@ describe('ShareService', () => {
         downloads: 0,
         created_at: new Date().toISOString(),
         expires_at: null,
+        e2e_encrypted: false,
       };
 
       mockDb.findShareById.mockResolvedValue(mockShare);
@@ -200,6 +205,7 @@ describe('ShareService', () => {
         downloads: 0,
         created_at: new Date(Date.now() - 7200000).toISOString(),
         expires_at: new Date(Date.now() - 3600000).toISOString(), // expired 1 hour ago
+        e2e_encrypted: false,
       };
 
       mockDb.findShareById.mockResolvedValue(expiredShare);
@@ -223,6 +229,7 @@ describe('ShareService', () => {
         downloads: 0,
         created_at: new Date().toISOString(),
         expires_at: null,
+        e2e_encrypted: false,
       };
 
       mockDb.findShareById.mockResolvedValue(mockShare);
@@ -254,6 +261,7 @@ describe('ShareService', () => {
         downloads: 0,
         created_at: new Date().toISOString(),
         expires_at: null,
+        e2e_encrypted: false,
       };
 
       mockDb.findShareById.mockResolvedValue(mockShare);
@@ -275,6 +283,7 @@ describe('ShareService', () => {
         downloads: 5,
         created_at: new Date().toISOString(),
         expires_at: null,
+        e2e_encrypted: false,
       };
 
       mockDb.findShareById.mockResolvedValue(mockShare);
@@ -309,6 +318,7 @@ describe('ShareService', () => {
           downloads: 0,
           created_at: new Date().toISOString(),
           expires_at: null,
+          e2e_encrypted: false,
         },
         {
           id: 'test-id-2',
@@ -323,6 +333,7 @@ describe('ShareService', () => {
           downloads: 0,
           created_at: new Date().toISOString(),
           expires_at: null,
+          e2e_encrypted: false,
         },
       ];
 
@@ -350,6 +361,7 @@ describe('ShareService', () => {
           downloads: 0,
           created_at: new Date().toISOString(),
           expires_at: null,
+          e2e_encrypted: false,
         },
       ];
 

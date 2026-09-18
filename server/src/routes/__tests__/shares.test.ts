@@ -1,6 +1,6 @@
 import request from 'supertest';
 import express from 'express';
-import sharesRouter from '../routes/shares';
+import sharesRouter from '../shares';
 import { IDatabaseAdapter } from '../../db/adapters/IDatabaseAdapter';
 
 describe('Shares API Endpoints', () => {
@@ -51,6 +51,7 @@ describe('Shares API Endpoints', () => {
         downloads: 0,
         created_at: new Date().toISOString(),
         expires_at: null,
+        e2e_encrypted: false,
       };
 
       mockDb.createShare.mockResolvedValue(mockShare);
@@ -107,6 +108,7 @@ describe('Shares API Endpoints', () => {
         downloads: 0,
         created_at: new Date().toISOString(),
         expires_at: null,
+        e2e_encrypted: false,
       };
 
       mockDb.findShareById.mockResolvedValue(mockShare);
@@ -142,6 +144,7 @@ describe('Shares API Endpoints', () => {
         downloads: 0,
         created_at: new Date().toISOString(),
         expires_at: null,
+        e2e_encrypted: false,
       };
 
       mockDb.findShareById.mockResolvedValue(mockShare);
