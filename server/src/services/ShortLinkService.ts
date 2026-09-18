@@ -4,7 +4,7 @@ import { nanoid } from 'nanoid';
  * Short Link Service - Single Responsibility Principle
  * Responsible for generating and managing short identifiers.
  */
-class ShortLinkService {
+export class ShortLinkService {
   private readonly ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
   private readonly ID_LENGTH = 8;
 
