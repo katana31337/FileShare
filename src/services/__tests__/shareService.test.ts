@@ -71,6 +71,7 @@ describe('ShareService', () => {
     it('должен создавать шар через localStorage если сервер недоступен', async () => {
       (apiClient.checkHealth as jest.Mock).mockResolvedValue(false);
       (connectionMonitor.getStatus as jest.Mock).mockReturnValue('disconnected');
+      (shareService as any).useApi = false;
       
       const mockResponse = {
         id: 'test-id',

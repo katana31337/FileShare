@@ -41,6 +41,16 @@ export class FileService {
       throw new Error(`Имя файла слишком длинное. Максимум ${this.maxFileNameLength} символов`);
     }
 
+    // Check for absolute paths (Unix and Windows)
+    if (fileName.startsWith('/') || fileName.startsWith('\\') || /^[A-Za-z]:/.test(fileName)) {
+      throw new Error('Имя файла не может быть абсолютным путём');
+    }
+
+    // Check for relative paths
+    if (fileName.startsWith('./') || fileName.startsWith('.\\') || fileName.startsWith('../') || fileName.startsWith('..\\')) {
+      throw new Error('Имя файла не может быть относительным путём');
+    }
+
     // Check for path traversal
     if (this.PATH_TRAVERSAL.test(fileName)) {
       throw new Error('Обнаружена попытка path traversal атаки');

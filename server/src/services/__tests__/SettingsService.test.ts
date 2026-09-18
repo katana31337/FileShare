@@ -34,6 +34,7 @@ describe('SettingsService', () => {
 
   describe('get', () => {
     it('должен возвращать значение настройки', async () => {
+      mockDb.getAllSettings.mockResolvedValue([]);
       mockDb.getSetting.mockResolvedValue('test-value');
 
       const value = await settingsService.get('test-key');
@@ -43,6 +44,7 @@ describe('SettingsService', () => {
     });
 
     it('должен возвращать null если настройка не найдена', async () => {
+      mockDb.getAllSettings.mockResolvedValue([]);
       mockDb.getSetting.mockResolvedValue(null);
 
       const value = await settingsService.get('nonexistent');
@@ -129,6 +131,7 @@ describe('SettingsService', () => {
 
   describe('getSiteConfig', () => {
     it('должен возвращать конфигурацию сайта', async () => {
+      mockDb.getAllSettings.mockResolvedValue([]);
       mockDb.getSetting.mockImplementation(async (key: string) => {
         const settings: Record<string, string> = {
           site_name: 'QuickShare',
@@ -152,6 +155,7 @@ describe('SettingsService', () => {
 
   describe('getLimits', () => {
     it('должен возвращать лимиты', async () => {
+      mockDb.getAllSettings.mockResolvedValue([]);
       mockDb.getSetting.mockImplementation(async (key: string) => {
         const settings: Record<string, string> = {
           max_file_size: '104857600',
@@ -174,6 +178,7 @@ describe('SettingsService', () => {
 
   describe('getSecurityConfig', () => {
     it('должен возвращать конфигурацию безопасности', async () => {
+      mockDb.getAllSettings.mockResolvedValue([]);
       mockDb.getSetting.mockImplementation(async (key: string) => {
         const settings: Record<string, string> = {
           allow_password: 'true',
@@ -198,6 +203,7 @@ describe('SettingsService', () => {
 
   describe('getSystemConfig', () => {
     it('должен возвращать конфигурацию системы', async () => {
+      mockDb.getAllSettings.mockResolvedValue([]);
       mockDb.getSetting.mockImplementation(async (key: string) => {
         const settings: Record<string, string> = {
           maintenance_mode: 'false',
@@ -216,6 +222,7 @@ describe('SettingsService', () => {
     });
 
     it('должен возвращать значение по умолчанию для historyRetentionDays', async () => {
+      mockDb.getAllSettings.mockResolvedValue([]);
       mockDb.getSetting.mockResolvedValue(null);
 
       const config = await settingsService.getSystemConfig();
@@ -224,6 +231,7 @@ describe('SettingsService', () => {
     });
 
     it('должен обрабатывать значение 0 для бессрочного хранения', async () => {
+      mockDb.getAllSettings.mockResolvedValue([]);
       mockDb.getSetting.mockImplementation(async (key: string) => {
         if (key === 'history_retention_days') return '0';
         return null;
