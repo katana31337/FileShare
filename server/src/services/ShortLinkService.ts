@@ -1,19 +1,23 @@
-import { nanoid } from 'nanoid';
+import { customAlphabet } from 'nanoid';
 
 /**
  * Short Link Service - Single Responsibility Principle
  * Responsible for generating and managing short identifiers.
+ * Uses only alphanumeric characters (no ambiguous characters like 0, O, I, l, 1)
  */
 export class ShortLinkService {
+  // Safe alphabet without ambiguous characters: 0, O, I, l, 1
   private readonly ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
   private readonly ID_LENGTH = 8;
+  private readonly customNanoid = customAlphabet(this.ALPHABET, this.ID_LENGTH);
 
   generate(): string {
-    return nanoid(this.ID_LENGTH);
+    return this.customNanoid();
   }
 
   generateCustom(length: number = this.ID_LENGTH): string {
-    return nanoid(length);
+    const customGenerator = customAlphabet(this.ALPHABET, length);
+    return customGenerator();
   }
 
   isValid(id: string): boolean {
