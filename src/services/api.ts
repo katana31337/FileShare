@@ -84,6 +84,19 @@ class ApiClient {
       return false;
     }
   }
+
+  async getPublicConfig(): Promise<{
+    limits: {
+      maxFileSize: number;
+      maxTextLength: number;
+      defaultExpiry: number;
+      maxDownloadsDefault: number;
+    };
+    siteName?: string;
+    siteIcon?: string;
+  }> {
+    return this.request('/admin/public-config');
+  }
 }
 
 export const apiClient = new ApiClient();
