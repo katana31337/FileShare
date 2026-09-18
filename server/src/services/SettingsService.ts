@@ -115,6 +115,18 @@ export class SettingsService {
     };
   }
 
+  async getSystemConfig(): Promise<{
+    maintenanceMode: boolean;
+    enableAnalytics: boolean;
+    historyRetentionDays: number;
+  }> {
+    return {
+      maintenanceMode: await this.getBoolean('maintenance_mode', false),
+      enableAnalytics: await this.getBoolean('enable_analytics', false),
+      historyRetentionDays: await this.getNumber('history_retention_days', 30),
+    };
+  }
+
   invalidateCache(): void {
     this.cacheLoaded = false;
     this.cache.clear();

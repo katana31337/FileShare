@@ -177,9 +177,20 @@ async function startServer() {
     // Periodic cleanup
     setInterval(async () => {
       try {
+        // Cleanup expired shares
         const deleted = await db.cleanupExpired();
         if (deleted > 0) {
           console.log(`🧹 Cleaned up ${deleted} expired shares`);
+        }
+
+        // Cleanup old history based on retention settings
+        const systemConfig = await settingsService.getSystemConfig();
+        if (systemConfig.historyRetentionDays > 0) {
+          const { shareService } = await import('./services/ShareService');
+          const historyDeleted = await shareService.cleanupOldHistory(systemConfig.historyRetentionDays);
+          if (historyDeleted > 0) {
+            console.log(`🗑️ Cleaned up ${historyDeleted} shares older than ${systemConfig.historyRetentionDays} days`);
+          }
         }
       } catch (e) {
         // ignore

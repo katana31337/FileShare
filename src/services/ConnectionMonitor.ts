@@ -15,7 +15,7 @@ export interface ConnectionEvent {
   error?: string;
 }
 
-class ConnectionMonitor extends EventEmitter {
+export class ConnectionMonitor extends EventEmitter {
   private status: ConnectionStatus = 'checking';
   private intervalId: number | null = null;
   private checkInterval: number = 5000; // 5 seconds
