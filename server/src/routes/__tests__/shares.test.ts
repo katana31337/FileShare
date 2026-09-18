@@ -1,39 +1,25 @@
 import request from 'supertest';
 import express from 'express';
 import sharesRouter from '../shares';
-import { IDatabaseAdapter } from '../../db/adapters/IDatabaseAdapter';
+import { database } from '../../db/database';
+
+// Mock database module
+jest.mock('../../db/database', () => ({
+  database: {
+    createShare: jest.fn(),
+    findShareById: jest.fn(),
+    incrementShareDownloads: jest.fn(),
+  },
+}));
 
 describe('Shares API Endpoints', () => {
   let app: express.Application;
-  let mockDb: jest.Mocked<IDatabaseAdapter>;
 
   beforeEach(() => {
+    jest.clearAllMocks();
     app = express();
     app.use(express.json());
     app.use('/api/shares', sharesRouter);
-
-    mockDb = {
-      connect: jest.fn(),
-      disconnect: jest.fn(),
-      isHealthy: jest.fn(),
-      createShare: jest.fn(),
-      findShareById: jest.fn(),
-      incrementShareDownloads: jest.fn(),
-      deleteShare: jest.fn(),
-      listShares: jest.fn(),
-      cleanupExpired: jest.fn(),
-      getSetting: jest.fn(),
-      setSetting: jest.fn(),
-      getAllSettings: jest.fn(),
-      getSettingsByCategory: jest.fn(),
-      deleteSetting: jest.fn(),
-      createAdmin: jest.fn(),
-      findAdminByUsername: jest.fn(),
-      findAdminById: jest.fn(),
-      updateAdminLastLogin: jest.fn(),
-      changeAdminPassword: jest.fn(),
-      getStats: jest.fn(),
-    };
   });
 
   describe('POST /api/shares', () => {
@@ -54,7 +40,7 @@ describe('Shares API Endpoints', () => {
         e2e_encrypted: false,
       };
 
-      mockDb.createShare.mockResolvedValue(mockShare);
+      (database.createShare as jest.Mock).mockResolvedValue(mockShare);
 
       const response = await request(app)
         .post('/api/shares')
@@ -111,7 +97,7 @@ describe('Shares API Endpoints', () => {
         e2e_encrypted: false,
       };
 
-      mockDb.findShareById.mockResolvedValue(mockShare);
+      (database.findShareById as jest.Mock).mockResolvedValue(mockShare);
 
       const response = await request(app).get('/api/shares/test-id');
 
@@ -120,7 +106,7 @@ describe('Shares API Endpoints', () => {
     });
 
     it('должен возвращать 404 если шар не найден', async () => {
-      mockDb.findShareById.mockResolvedValue(null);
+      (database.findShareById as jest.Mock).mockResolvedValue(null);
 
       const response = await request(app).get('/api/shares/nonexistent');
 
@@ -147,8 +133,8 @@ describe('Shares API Endpoints', () => {
         e2e_encrypted: false,
       };
 
-      mockDb.findShareById.mockResolvedValue(mockShare);
-      mockDb.incrementShareDownloads.mockResolvedValue(undefined);
+      (database.findShareById as jest.Mock).mockResolvedValue(mockShare);
+      (database.incrementShareDownloads as jest.Mock).mockResolvedValue(undefined);
 
       const response = await request(app).get('/api/shares/test-id/download');
 
@@ -157,7 +143,7 @@ describe('Shares API Endpoints', () => {
     });
 
     it('должен возвращать 404 если шар не найден', async () => {
-      mockDb.findShareById.mockResolvedValue(null);
+      (database.findShareById as jest.Mock).mockResolvedValue(null);
 
       const response = await request(app).get('/api/shares/nonexistent/download');
 

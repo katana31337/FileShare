@@ -104,6 +104,7 @@ export class MongoAdapter implements IDatabaseAdapter {
       downloads: doc.downloads || 0,
       created_at: doc.created_at,
       expires_at: doc.expires_at,
+      e2e_encrypted: doc.e2e_encrypted || false,
     };
   }
 
