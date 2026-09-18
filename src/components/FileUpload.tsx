@@ -3,12 +3,31 @@ import React, { useState, useRef } from 'react';
 interface FileUploadProps {
   onFileSelect: (file: File) => void;
   isUploading: boolean;
+  maxFileSize?: number;
 }
 
-export const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect, isUploading }) => {
+export const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect, isUploading, maxFileSize = 100 * 1024 * 1024 }) => {
   const [dragActive, setDragActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const formatSize = (bytes: number): string => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const validateFile = (file: File): boolean => {
+    if (file.size > maxFileSize) {
+      setError(`Файл слишком большой. Максимальный размер: ${formatSize(maxFileSize)}`);
+      return false;
+    }
+    setError(null);
+    return true;
+  };
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -27,36 +46,34 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect, isUploadin
 
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const file = e.dataTransfer.files[0];
-      setSelectedFile(file);
-      onFileSelect(file);
+      if (validateFile(file)) {
+        setSelectedFile(file);
+        onFileSelect(file);
+      }
     }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      setSelectedFile(file);
-      onFileSelect(file);
+      if (validateFile(file)) {
+        setSelectedFile(file);
+        onFileSelect(file);
+      }
     }
-  };
-
-  const formatSize = (bytes: number): string => {
-    if (bytes === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   return (
     <div className="w-full">
       <div
         className={`relative border-2 border-dashed rounded-2xl p-8 text-center transition-all duration-300 cursor-pointer
-          ${dragActive
-            ? 'border-purple-400 bg-purple-500/10 scale-[1.02]'
-            : selectedFile
-              ? 'border-green-400 bg-green-500/10'
-              : 'border-gray-600 hover:border-purple-400 hover:bg-purple-500/5'
+          ${error
+            ? 'border-red-400 bg-red-500/10'
+            : dragActive
+              ? 'border-purple-400 bg-purple-500/10 scale-[1.02]'
+              : selectedFile
+                ? 'border-green-400 bg-green-500/10'
+                : 'border-gray-600 hover:border-purple-400 hover:bg-purple-500/5'
           }`}
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
@@ -71,7 +88,28 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect, isUploadin
           onChange={handleChange}
         />
 
-        {selectedFile ? (
+        {error ? (
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center">
+              <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-red-400 font-medium text-lg">Ошибка</p>
+              <p className="text-red-300 text-sm">{error}</p>
+            </div>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setError(null);
+              }}
+              className="text-gray-400 hover:text-white text-sm underline"
+            >
+              Попробовать снова
+            </button>
+          </div>
+        ) : selectedFile ? (
           <div className="flex flex-col items-center gap-3">
             <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center">
               <svg className="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -104,7 +142,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect, isUploadin
                 {dragActive ? 'Отпустите файл' : 'Перетащите файл сюда'}
               </p>
               <p className="text-gray-400 text-sm mt-1">
-                или нажмите для выбора • Макс. 100 МБ
+                или нажмите для выбора • Макс. {formatSize(maxFileSize)}
               </p>
             </div>
           </div>

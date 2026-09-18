@@ -46,6 +46,10 @@ function App() {
     logoUrl: '',
     primaryColor: '#9333ea',
   });
+  const [limits, setLimits] = useState({
+    maxFileSize: 100 * 1024 * 1024, // 100MB default
+    maxTextLength: 50000,
+  });
 
   useEffect(() => {
     // Check if we're on a share URL
@@ -75,6 +79,10 @@ function App() {
         // Update document title
         document.title = config.name || 'QuickShare';
       }
+
+      // Load limits from backend
+      const backendLimits = await shareService.getLimits();
+      setLimits(backendLimits);
 
       // Check admin status
       const adminStatus = await adminApi.getAdminStatus();
@@ -345,7 +353,7 @@ function App() {
               <div className="mb-6">
                 {shareType === 'file' ? (
                   <div className="space-y-4">
-                    <FileUpload onFileSelect={handleFileSelect} isUploading={isSubmitting} />
+                    <FileUpload onFileSelect={handleFileSelect} isUploading={isSubmitting} maxFileSize={limits.maxFileSize} />
                     <button
                       onClick={handleFileSubmit}
                       disabled={!selectedFile || isSubmitting}
