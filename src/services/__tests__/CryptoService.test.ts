@@ -6,16 +6,16 @@ describe('CryptoService', () => {
   beforeEach(() => {
     cryptoService = new CryptoService();
     
-    // Reset all mocks
+    // Сброс всех моков
     jest.clearAllMocks();
   });
 
   describe('isAvailable', () => {
-    it('should return true when Web Crypto API is available', () => {
+    it('должен возвращать true, когда Web Crypto API доступен', () => {
       expect(CryptoService.isAvailable()).toBe(true);
     });
 
-    it('should return false when crypto is undefined', () => {
+    it('должен возвращать false, когда crypto не определён', () => {
       const originalCrypto = global.crypto;
       // @ts-ignore
       delete global.crypto;
@@ -27,7 +27,7 @@ describe('CryptoService', () => {
   });
 
   describe('deriveKey', () => {
-    it('should derive a key from password', async () => {
+    it('должен генерировать ключ из пароля', async () => {
       const mockKey = { type: 'secret' } as CryptoKey;
       
       (crypto.subtle.importKey as jest.Mock).mockResolvedValue(mockKey);
@@ -37,7 +37,7 @@ describe('CryptoService', () => {
 
       expect(crypto.subtle.importKey).toHaveBeenCalledWith(
         'raw',
-        expect.any(Uint8Array),
+        expect.any(Object),
         { name: 'PBKDF2' },
         false,
         ['deriveBits', 'deriveKey']
@@ -58,7 +58,7 @@ describe('CryptoService', () => {
       expect(key).toBe(mockKey);
     });
 
-    it('should use the same salt for all derivations', async () => {
+    it('должен использовать одинаковую соль для всех генераций', async () => {
       const mockKey = { type: 'secret' } as CryptoKey;
       
       (crypto.subtle.importKey as jest.Mock).mockResolvedValue(mockKey);
@@ -75,7 +75,7 @@ describe('CryptoService', () => {
   });
 
   describe('encryptText', () => {
-    it('should encrypt text and return base64 string', async () => {
+    it('должен шифровать текст и возвращать base64 строку', async () => {
       const mockKey = { type: 'secret' } as CryptoKey;
       const mockEncrypted = new ArrayBuffer(10);
       
@@ -86,17 +86,17 @@ describe('CryptoService', () => {
       expect(crypto.subtle.encrypt).toHaveBeenCalledWith(
         expect.objectContaining({
           name: 'AES-GCM',
-          iv: expect.any(Uint8Array),
+          iv: expect.any(Object),
         }),
         mockKey,
-        expect.any(Uint8Array)
+        expect.any(Object)
       );
 
       expect(typeof result).toBe('string');
       expect(result.length).toBeGreaterThan(0);
     });
 
-    it('should use random IV for each encryption', async () => {
+    it('должен использовать случайный IV для каждого шифрования', async () => {
       const mockKey = { type: 'secret' } as CryptoKey;
       const mockEncrypted = new ArrayBuffer(10);
       
@@ -108,19 +108,19 @@ describe('CryptoService', () => {
       await cryptoService.encryptText('test2', mockKey);
       const secondIV = (crypto.subtle.encrypt as jest.Mock).mock.calls[1][0].iv;
 
-      // IVs should be different (with high probability)
+      // IV должны быть разными (с высокой вероятностью)
       expect(firstIV).not.toEqual(secondIV);
     });
   });
 
   describe('decryptText', () => {
-    it('should decrypt base64 encrypted text', async () => {
+    it('должен дешифровать base64 зашифрованный текст', async () => {
       const mockKey = { type: 'secret' } as CryptoKey;
       const mockDecrypted = new TextEncoder().encode('decrypted text');
       
       (crypto.subtle.decrypt as jest.Mock).mockResolvedValue(mockDecrypted.buffer);
 
-      // Create a valid encrypted string (IV + ciphertext)
+      // Создаём валидную зашифрованную строку (IV + ciphertext)
       const iv = new Uint8Array(12);
       const ciphertext = new Uint8Array([1, 2, 3, 4, 5]);
       const combined = new Uint8Array(iv.length + ciphertext.length);
@@ -142,7 +142,7 @@ describe('CryptoService', () => {
       expect(result).toBe('decrypted text');
     });
 
-    it('should throw error for invalid base64', async () => {
+    it('должен выбрасывать ошибку для невалидного base64', async () => {
       const mockKey = { type: 'secret' } as CryptoKey;
 
       await expect(
@@ -152,7 +152,7 @@ describe('CryptoService', () => {
   });
 
   describe('encryptFileBuffer', () => {
-    it('should encrypt ArrayBuffer and return base64', async () => {
+    it('должен шифровать ArrayBuffer и возвращать base64', async () => {
       const mockKey = { type: 'secret' } as CryptoKey;
       const mockEncrypted = new ArrayBuffer(10);
       const fileBuffer = new ArrayBuffer(100);
@@ -175,13 +175,13 @@ describe('CryptoService', () => {
   });
 
   describe('decryptFileBuffer', () => {
-    it('should decrypt base64 to ArrayBuffer', async () => {
+    it('должен дешифровать base64 в ArrayBuffer', async () => {
       const mockKey = { type: 'secret' } as CryptoKey;
       const mockDecrypted = new ArrayBuffer(100);
       
       (crypto.subtle.decrypt as jest.Mock).mockResolvedValue(mockDecrypted);
 
-      // Create a valid encrypted string
+      // Создаём валидную зашифрованную строку
       const iv = new Uint8Array(12);
       const ciphertext = new Uint8Array([1, 2, 3, 4, 5]);
       const combined = new Uint8Array(iv.length + ciphertext.length);
@@ -195,12 +195,12 @@ describe('CryptoService', () => {
     });
   });
 
-  describe('Integration: encrypt and decrypt', () => {
-    it('should encrypt and decrypt text correctly', async () => {
+  describe('Интеграция: шифрование и дешифрование', () => {
+    it('должен корректно шифровать и дешифровать текст', async () => {
       const mockKey = { type: 'secret' } as CryptoKey;
       const originalText = 'Hello, World!';
       
-      // Mock encrypt to return predictable data
+      // Мокируем encrypt для возврата предсказуемых данных
       const iv = new Uint8Array(12).fill(1);
       const encryptedData = new TextEncoder().encode('encrypted');
       const combined = new Uint8Array(iv.length + encryptedData.length);

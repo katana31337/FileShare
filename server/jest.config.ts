@@ -23,4 +23,5 @@ export default {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
+  reporters: ['default', '<rootDir>/jest-reporter.js'],
 };
