@@ -195,4 +195,43 @@ describe('SettingsService', () => {
       expect(security.enableE2EEncryption).toBe(false);
     });
   });
+
+  describe('getSystemConfig', () => {
+    it('должен возвращать конфигурацию системы', async () => {
+      mockDb.getSetting.mockImplementation(async (key: string) => {
+        const settings: Record<string, string> = {
+          maintenance_mode: 'false',
+          enable_analytics: 'false',
+          history_retention_days: '30',
+        };
+        return settings[key] || null;
+      });
+
+      const config = await settingsService.getSystemConfig();
+
+      expect(config).toBeDefined();
+      expect(config.maintenanceMode).toBe(false);
+      expect(config.enableAnalytics).toBe(false);
+      expect(config.historyRetentionDays).toBe(30);
+    });
+
+    it('должен возвращать значение по умолчанию для historyRetentionDays', async () => {
+      mockDb.getSetting.mockResolvedValue(null);
+
+      const config = await settingsService.getSystemConfig();
+
+      expect(config.historyRetentionDays).toBe(30);
+    });
+
+    it('должен обрабатывать значение 0 для бессрочного хранения', async () => {
+      mockDb.getSetting.mockImplementation(async (key: string) => {
+        if (key === 'history_retention_days') return '0';
+        return null;
+      });
+
+      const config = await settingsService.getSystemConfig();
+
+      expect(config.historyRetentionDays).toBe(0);
+    });
+  });
 });

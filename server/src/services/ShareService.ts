@@ -156,6 +156,40 @@ class ShareService {
     return { info, data };
   }
 
+  async cleanupOldHistory(retentionDays: number): Promise<number> {
+    if (retentionDays === 0) {
+      return 0; // Бессрочное хранение
+    }
+
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
+    const cutoffISOString = cutoffDate.toISOString();
+
+    // Получаем все шары старше cutoffDate
+    const allShares = await database.listShares({ limit: 10000 });
+    const oldShares = allShares.filter(share => 
+      share.created_at < cutoffISOString
+    );
+
+    let deletedCount = 0;
+    for (const share of oldShares) {
+      // Удаляем файл если это был файл
+      if (share.file_path) {
+        try {
+          await fileService.deleteFile(share.file_path);
+        } catch (error) {
+          // Игнорируем ошибки удаления файлов
+        }
+      }
+      
+      // Удаляем запись из БД
+      await database.deleteShare(share.id);
+      deletedCount++;
+    }
+
+    return deletedCount;
+  }
+
   getStats() {
     return database.getStats();
   }

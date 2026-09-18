@@ -371,4 +371,133 @@ describe('ShareService', () => {
       expect(mockDb.cleanupExpired).toHaveBeenCalled();
     });
   });
+
+  describe('cleanupOldHistory', () => {
+    it('должен удалять шары старше указанного срока', async () => {
+      const oldDate = new Date();
+      oldDate.setDate(oldDate.getDate() - 40); // 40 дней назад
+
+      const recentDate = new Date();
+      recentDate.setDate(recentDate.getDate() - 10); // 10 дней назад
+
+      const mockShares: ShareRecord[] = [
+        {
+          id: 'old-share',
+          type: 'text',
+          content: 'old content',
+          file_name: null,
+          file_size: null,
+          mime_type: null,
+          file_path: null,
+          password_hash: null,
+          max_downloads: null,
+          downloads: 0,
+          created_at: oldDate.toISOString(),
+          expires_at: null,
+          e2e_encrypted: false,
+        },
+        {
+          id: 'recent-share',
+          type: 'text',
+          content: 'recent content',
+          file_name: null,
+          file_size: null,
+          mime_type: null,
+          file_path: null,
+          password_hash: null,
+          max_downloads: null,
+          downloads: 0,
+          created_at: recentDate.toISOString(),
+          expires_at: null,
+          e2e_encrypted: false,
+        },
+      ];
+
+      mockDb.listShares.mockResolvedValue(mockShares);
+      mockDb.deleteShare.mockResolvedValue(undefined);
+
+      const deleted = await shareService.cleanupOldHistory(30);
+
+      expect(deleted).toBe(1);
+      expect(mockDb.deleteShare).toHaveBeenCalledWith('old-share');
+      expect(mockDb.deleteShare).not.toHaveBeenCalledWith('recent-share');
+    });
+
+    it('должен возвращать 0 если retentionDays = 0 (бессрочное хранение)', async () => {
+      const deleted = await shareService.cleanupOldHistory(0);
+
+      expect(deleted).toBe(0);
+      expect(mockDb.listShares).not.toHaveBeenCalled();
+    });
+
+    it('должен удалять файлы при очистке истории', async () => {
+      const oldDate = new Date();
+      oldDate.setDate(oldDate.getDate() - 40);
+
+      const mockShares: ShareRecord[] = [
+        {
+          id: 'file-share',
+          type: 'file',
+          content: null,
+          file_name: 'test.pdf',
+          file_size: 1024,
+          mime_type: 'application/pdf',
+          file_path: '/path/to/file.pdf',
+          password_hash: null,
+          max_downloads: null,
+          downloads: 0,
+          created_at: oldDate.toISOString(),
+          expires_at: null,
+          e2e_encrypted: false,
+        },
+      ];
+
+      mockDb.listShares.mockResolvedValue(mockShares);
+      mockDb.deleteShare.mockResolvedValue(undefined);
+
+      // Mock fileService
+      const fileService = require('../FileService').fileService;
+      fileService.deleteFile = jest.fn().mockResolvedValue(undefined);
+
+      const deleted = await shareService.cleanupOldHistory(30);
+
+      expect(deleted).toBe(1);
+      expect(fileService.deleteFile).toHaveBeenCalledWith('/path/to/file.pdf');
+    });
+
+    it('должен обрабатывать ошибки удаления файлов', async () => {
+      const oldDate = new Date();
+      oldDate.setDate(oldDate.getDate() - 40);
+
+      const mockShares: ShareRecord[] = [
+        {
+          id: 'file-share',
+          type: 'file',
+          content: null,
+          file_name: 'test.pdf',
+          file_size: 1024,
+          mime_type: 'application/pdf',
+          file_path: '/path/to/file.pdf',
+          password_hash: null,
+          max_downloads: null,
+          downloads: 0,
+          created_at: oldDate.toISOString(),
+          expires_at: null,
+          e2e_encrypted: false,
+        },
+      ];
+
+      mockDb.listShares.mockResolvedValue(mockShares);
+      mockDb.deleteShare.mockResolvedValue(undefined);
+
+      // Mock fileService с ошибкой
+      const fileService = require('../FileService').fileService;
+      fileService.deleteFile = jest.fn().mockRejectedValue(new Error('File not found'));
+
+      const deleted = await shareService.cleanupOldHistory(30);
+
+      expect(deleted).toBe(1);
+      expect(mockDb.deleteShare).toHaveBeenCalledWith('file-share');
+    });
+  });
 });

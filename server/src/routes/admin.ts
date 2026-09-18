@@ -353,6 +353,27 @@ router.post('/cleanup', async (_req: Request, res: Response) => {
 });
 
 /**
+ * POST /api/admin/cleanup-history — Cleanup old history based on retention settings
+ */
+router.post('/cleanup-history', async (_req: Request, res: Response) => {
+  try {
+    const { shareService } = await import('../services/ShareService');
+    const systemConfig = await settingsService.getSystemConfig();
+    const deleted = await shareService.cleanupOldHistory(systemConfig.historyRetentionDays);
+    res.json({ 
+      success: true, 
+      deleted,
+      retentionDays: systemConfig.historyRetentionDays,
+      message: systemConfig.historyRetentionDays === 0 
+        ? 'History retention is disabled (unlimited storage)' 
+        : `Cleaned up ${deleted} shares older than ${systemConfig.historyRetentionDays} days`
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: 'SERVER_ERROR', message: error.message });
+  }
+});
+
+/**
  * PUT /api/admin/password — Change admin password
  */
 router.put('/password', async (req: Request, res: Response) => {
