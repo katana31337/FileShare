@@ -34,18 +34,18 @@ describe('SettingsService', () => {
 
   describe('get', () => {
     it('должен возвращать значение настройки', async () => {
-      mockDb.getAllSettings.mockResolvedValue([]);
-      mockDb.getSetting.mockResolvedValue('test-value');
+      // Добавляем значение в кэш через getAllSettings
+      mockDb.getAllSettings.mockResolvedValue([
+        { key: 'test-key', value: 'test-value', category: 'general', description: 'Test', updated_at: new Date().toISOString() }
+      ]);
 
       const value = await settingsService.get('test-key');
 
       expect(value).toBe('test-value');
-      expect(mockDb.getSetting).toHaveBeenCalledWith('test-key');
     });
 
     it('должен возвращать null если настройка не найдена', async () => {
       mockDb.getAllSettings.mockResolvedValue([]);
-      mockDb.getSetting.mockResolvedValue(null);
 
       const value = await settingsService.get('nonexistent');
 
@@ -131,17 +131,14 @@ describe('SettingsService', () => {
 
   describe('getSiteConfig', () => {
     it('должен возвращать конфигурацию сайта', async () => {
-      mockDb.getAllSettings.mockResolvedValue([]);
-      mockDb.getSetting.mockImplementation(async (key: string) => {
-        const settings: Record<string, string> = {
-          site_name: 'QuickShare',
-          site_description: 'Anonymous file sharing',
-          site_icon: '🔗',
-          site_logo_url: '',
-          primary_color: '#9333ea',
-        };
-        return settings[key] || null;
-      });
+      // Добавляем значения в кэш через getAllSettings
+      mockDb.getAllSettings.mockResolvedValue([
+        { key: 'site_name', value: 'QuickShare', category: 'general', description: 'Site name', updated_at: new Date().toISOString() },
+        { key: 'site_description', value: 'Anonymous file sharing', category: 'general', description: 'Site description', updated_at: new Date().toISOString() },
+        { key: 'site_icon', value: '🔗', category: 'general', description: 'Site icon', updated_at: new Date().toISOString() },
+        { key: 'site_logo_url', value: '', category: 'general', description: 'Site logo', updated_at: new Date().toISOString() },
+        { key: 'primary_color', value: '#9333ea', category: 'general', description: 'Primary color', updated_at: new Date().toISOString() },
+      ]);
 
       const config = await settingsService.getSiteConfig();
 
@@ -155,16 +152,13 @@ describe('SettingsService', () => {
 
   describe('getLimits', () => {
     it('должен возвращать лимиты', async () => {
-      mockDb.getAllSettings.mockResolvedValue([]);
-      mockDb.getSetting.mockImplementation(async (key: string) => {
-        const settings: Record<string, string> = {
-          max_file_size: '104857600',
-          max_text_length: '50000',
-          default_expiry: '86400',
-          max_downloads_default: '0',
-        };
-        return settings[key] || null;
-      });
+      // Добавляем значения в кэш через getAllSettings
+      mockDb.getAllSettings.mockResolvedValue([
+        { key: 'max_file_size', value: '104857600', category: 'limits', description: 'Max file size', updated_at: new Date().toISOString() },
+        { key: 'max_text_length', value: '50000', category: 'limits', description: 'Max text length', updated_at: new Date().toISOString() },
+        { key: 'default_expiry', value: '86400', category: 'limits', description: 'Default expiry', updated_at: new Date().toISOString() },
+        { key: 'max_downloads_default', value: '0', category: 'limits', description: 'Max downloads default', updated_at: new Date().toISOString() },
+      ]);
 
       const limits = await settingsService.getLimits();
 
@@ -178,17 +172,14 @@ describe('SettingsService', () => {
 
   describe('getSecurityConfig', () => {
     it('должен возвращать конфигурацию безопасности', async () => {
-      mockDb.getAllSettings.mockResolvedValue([]);
-      mockDb.getSetting.mockImplementation(async (key: string) => {
-        const settings: Record<string, string> = {
-          allow_password: 'true',
-          require_password: 'false',
-          auto_delete_downloaded: 'false',
-          enable_registration: 'false',
-          enable_e2e_encryption: 'false',
-        };
-        return settings[key] || null;
-      });
+      // Добавляем значения в кэш через getAllSettings
+      mockDb.getAllSettings.mockResolvedValue([
+        { key: 'allow_password', value: 'true', category: 'security', description: 'Allow password', updated_at: new Date().toISOString() },
+        { key: 'require_password', value: 'false', category: 'security', description: 'Require password', updated_at: new Date().toISOString() },
+        { key: 'auto_delete_downloaded', value: 'false', category: 'security', description: 'Auto delete downloaded', updated_at: new Date().toISOString() },
+        { key: 'enable_registration', value: 'false', category: 'security', description: 'Enable registration', updated_at: new Date().toISOString() },
+        { key: 'enable_e2e_encryption', value: 'false', category: 'security', description: 'Enable E2E encryption', updated_at: new Date().toISOString() },
+      ]);
 
       const security = await settingsService.getSecurityConfig();
 
@@ -203,15 +194,12 @@ describe('SettingsService', () => {
 
   describe('getSystemConfig', () => {
     it('должен возвращать конфигурацию системы', async () => {
-      mockDb.getAllSettings.mockResolvedValue([]);
-      mockDb.getSetting.mockImplementation(async (key: string) => {
-        const settings: Record<string, string> = {
-          maintenance_mode: 'false',
-          enable_analytics: 'false',
-          history_retention_days: '30',
-        };
-        return settings[key] || null;
-      });
+      // Добавляем значения в кэш через getAllSettings
+      mockDb.getAllSettings.mockResolvedValue([
+        { key: 'maintenance_mode', value: 'false', category: 'system', description: 'Maintenance mode', updated_at: new Date().toISOString() },
+        { key: 'enable_analytics', value: 'false', category: 'system', description: 'Enable analytics', updated_at: new Date().toISOString() },
+        { key: 'history_retention_days', value: '30', category: 'system', description: 'History retention days', updated_at: new Date().toISOString() },
+      ]);
 
       const config = await settingsService.getSystemConfig();
 
@@ -223,7 +211,6 @@ describe('SettingsService', () => {
 
     it('должен возвращать значение по умолчанию для historyRetentionDays', async () => {
       mockDb.getAllSettings.mockResolvedValue([]);
-      mockDb.getSetting.mockResolvedValue(null);
 
       const config = await settingsService.getSystemConfig();
 
@@ -231,11 +218,10 @@ describe('SettingsService', () => {
     });
 
     it('должен обрабатывать значение 0 для бессрочного хранения', async () => {
-      mockDb.getAllSettings.mockResolvedValue([]);
-      mockDb.getSetting.mockImplementation(async (key: string) => {
-        if (key === 'history_retention_days') return '0';
-        return null;
-      });
+      // Добавляем значение 0 в кэш через getAllSettings
+      mockDb.getAllSettings.mockResolvedValue([
+        { key: 'history_retention_days', value: '0', category: 'system', description: 'History retention', updated_at: new Date().toISOString() },
+      ]);
 
       const config = await settingsService.getSystemConfig();
 
