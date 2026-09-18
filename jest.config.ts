@@ -32,5 +32,5 @@ export default {
       },
     }],
   },
-  reporters: ['default', '<rootDir>/jest-reporter.js'],
+  reporters: ['default', '<rootDir>/jest-reporter.cjs'],
 };
