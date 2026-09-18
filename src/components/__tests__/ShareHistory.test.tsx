@@ -226,7 +226,8 @@ describe('ShareHistory', () => {
     const toggleButton = screen.getByText(/История ссылок/i);
     fireEvent.click(toggleButton);
     
-    // Should only show 10 items
-    expect(screen.getByText(/История ссылок \(10\)/i)).toBeInTheDocument();
+    // Should only show 10 items - проверяем количество элементов
+    const items = screen.getAllByText(/https:\/\/example\.com\/s\/abc/i);
+    expect(items.length).toBe(10);
   });
 });
