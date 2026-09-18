@@ -18,6 +18,7 @@ export interface CreateShareInput {
   expiresIn?: number;
   maxDownloads?: number;
   password?: string;
+  e2eEncrypted?: boolean;
 }
 
 export interface ShareResponse {
@@ -38,6 +39,7 @@ export interface ShareInfoResponse {
   expiresAt: string | null;
   downloads: number;
   maxDownloads: number | null;
+  e2eEncrypted?: boolean;
 }
 
 export interface ShareDownloadResponse {
@@ -74,6 +76,7 @@ class ShareService {
       password_hash: passwordHash,
       max_downloads: input.maxDownloads || null,
       expires_at: expiresAt,
+      e2e_encrypted: input.e2eEncrypted || false,
     });
 
     return {
@@ -105,6 +108,7 @@ class ShareService {
       expiresAt: record.expires_at,
       downloads: record.downloads,
       maxDownloads: record.max_downloads,
+      e2eEncrypted: record.e2e_encrypted,
     };
   }
 

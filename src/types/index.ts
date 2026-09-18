@@ -9,6 +9,7 @@ export interface ShareCreateRequest {
   expiresIn?: number; // seconds
   maxDownloads?: number;
   password?: string;
+  e2eEncrypted?: boolean; // flag for E2E encrypted content
 }
 
 export interface ShareCreateResponse {
@@ -30,6 +31,7 @@ export interface ShareInfo {
   expiresAt: string | null;
   downloads: number;
   maxDownloads: number | null;
+  e2eEncrypted?: boolean;
 }
 
 export interface ShareDownload {

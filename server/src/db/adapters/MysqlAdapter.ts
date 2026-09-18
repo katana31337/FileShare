@@ -105,6 +105,7 @@ export class MysqlAdapter implements IDatabaseAdapter {
       ['require_password', 'false', 'security', 'Требовать пароль всегда'],
       ['auto_delete_downloaded', 'false', 'security', 'Удалять после скачивания'],
       ['enable_registration', 'false', 'security', 'Разрешить регистрацию'],
+      ['enable_e2e_encryption', 'false', 'security', 'Включить end-to-end шифрование'],
       ['admin_panel_path', 'admin', 'admin', 'URL путь к админ-панели (без слешей)'],
       ['admin_email', '', 'admin', 'Email администратора'],
       ['maintenance_mode', 'false', 'system', 'Режим обслуживания'],

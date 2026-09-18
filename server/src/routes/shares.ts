@@ -21,7 +21,7 @@ const upload = multer({
  */
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { type, content, expiresIn, maxDownloads, password } = req.body;
+    const { type, content, expiresIn, maxDownloads, password, e2eEncrypted } = req.body;
 
     if (type === 'text' && !content?.trim()) {
       return res.status(400).json({ error: 'VALIDATION', message: 'Content is required for text shares' });
@@ -37,6 +37,7 @@ router.post('/', async (req: Request, res: Response) => {
       expiresIn,
       maxDownloads: maxDownloads || undefined,
       password: password || undefined,
+      e2eEncrypted: e2eEncrypted || false,
     });
 
     res.status(201).json(result);
