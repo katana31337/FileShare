@@ -92,6 +92,9 @@ class ApiClient {
       defaultExpiry: number;
       maxDownloadsDefault: number;
     };
+    security?: {
+      enableE2EEncryption?: boolean;
+    };
     siteName?: string;
     siteIcon?: string;
   }> {

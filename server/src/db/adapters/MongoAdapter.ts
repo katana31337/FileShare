@@ -69,6 +69,7 @@ export class MongoAdapter implements IDatabaseAdapter {
       { key: 'require_password', value: 'false', category: 'security', description: 'Требовать пароль всегда' },
       { key: 'auto_delete_downloaded', value: 'false', category: 'security', description: 'Удалять после скачивания' },
       { key: 'enable_registration', value: 'false', category: 'security', description: 'Разрешить регистрацию' },
+      { key: 'enable_e2e_encryption', value: 'false', category: 'security', description: 'Включить end-to-end шифрование' },
       { key: 'admin_panel_path', value: 'admin', category: 'admin', description: 'URL путь к админ-панели (без слешей)' },
       { key: 'admin_email', value: '', category: 'admin', description: 'Email администратора' },
       { key: 'maintenance_mode', value: 'false', category: 'system', description: 'Режим обслуживания' },

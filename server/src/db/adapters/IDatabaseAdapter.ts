@@ -20,6 +20,7 @@ export interface ShareRecord {
   downloads: number;
   created_at: string;
   expires_at: string | null;
+  e2e_encrypted: boolean;
 }
 
 export interface SettingRecord {

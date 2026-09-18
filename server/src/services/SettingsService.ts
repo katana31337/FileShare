@@ -104,12 +104,14 @@ export class SettingsService {
     requirePassword: boolean;
     autoDeleteDownloaded: boolean;
     enableRegistration: boolean;
+    enableE2EEncryption: boolean;
   }> {
     return {
       allowPassword: await this.getBoolean('allow_password', true),
       requirePassword: await this.getBoolean('require_password', false),
       autoDeleteDownloaded: await this.getBoolean('auto_delete_downloaded', false),
       enableRegistration: await this.getBoolean('enable_registration', false),
+      enableE2EEncryption: await this.getBoolean('enable_e2e_encryption', false),
     };
   }
 

@@ -60,7 +60,8 @@ export class SqliteAdapter implements IDatabaseAdapter {
         max_downloads INTEGER,
         downloads INTEGER DEFAULT 0,
         created_at TEXT NOT NULL DEFAULT (datetime('now')),
-        expires_at TEXT
+        expires_at TEXT,
+        e2e_encrypted INTEGER DEFAULT 0
       );
 
       CREATE TABLE IF NOT EXISTS settings (
@@ -103,6 +104,7 @@ export class SqliteAdapter implements IDatabaseAdapter {
       ['require_password', 'false', 'security', 'Требовать пароль всегда'],
       ['auto_delete_downloaded', 'false', 'security', 'Удалять после скачивания'],
       ['enable_registration', 'false', 'security', 'Разрешить регистрацию'],
+      ['enable_e2e_encryption', 'false', 'security', 'Включить end-to-end шифрование'],
       ['admin_panel_path', 'admin', 'admin', 'URL путь к админ-панели (без слешей)'],
       ['admin_email', '', 'admin', 'Email администратора'],
       ['maintenance_mode', 'false', 'system', 'Режим обслуживания'],
@@ -125,21 +127,28 @@ export class SqliteAdapter implements IDatabaseAdapter {
   // === Shares ===
   async createShare(share: Omit<ShareRecord, 'downloads' | 'created_at'>): Promise<ShareRecord> {
     const stmt = this.db.prepare(`
-      INSERT INTO shares (id, type, file_name, file_size, mime_type, content, file_path, password_hash, max_downloads, expires_at)
-      VALUES (@id, @type, @file_name, @file_size, @mime_type, @content, @file_path, @password_hash, @max_downloads, @expires_at)
+      INSERT INTO shares (id, type, file_name, file_size, mime_type, content, file_path, password_hash, max_downloads, expires_at, e2e_encrypted)
+      VALUES (@id, @type, @file_name, @file_size, @mime_type, @content, @file_path, @password_hash, @max_downloads, @expires_at, @e2e_encrypted)
     `);
-    stmt.run(share);
+    stmt.run({
+      ...share,
+      e2e_encrypted: share.e2e_encrypted ? 1 : 0,
+    });
     return (await this.findShareById(share.id))!;
   }
 
   async findShareById(id: string): Promise<ShareRecord | null> {
-    const record = this.db.prepare('SELECT * FROM shares WHERE id = ?').get(id) as ShareRecord | undefined;
+    const record = this.db.prepare('SELECT * FROM shares WHERE id = ?').get(id) as any;
     if (!record) return null;
     if (record.expires_at && new Date(record.expires_at) < new Date()) {
       await this.deleteShare(id);
       return null;
     }
-    return record;
+    // Convert e2e_encrypted from INTEGER to boolean
+    return {
+      ...record,
+      e2e_encrypted: record.e2e_encrypted === 1,
+    };
   }
 
   async incrementShareDownloads(id: string): Promise<void> {
@@ -168,7 +177,11 @@ export class SqliteAdapter implements IDatabaseAdapter {
     query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
     params.push(limit, offset);
 
-    return this.db.prepare(query).all(...params) as ShareRecord[];
+    const records = this.db.prepare(query).all(...params) as any[];
+    return records.map(record => ({
+      ...record,
+      e2e_encrypted: record.e2e_encrypted === 1,
+    }));
   }
 
   async cleanupExpired(): Promise<number> {
