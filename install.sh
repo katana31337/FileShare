@@ -21,6 +21,7 @@ NC='\033[0m' # No Color
 DOMAIN=""
 PORT=""
 DB_TYPE=""
+ADMIN_PATH=""
 
 # Print banner
 print_banner() {
@@ -319,6 +320,58 @@ generate_jwt_secret() {
   JWT_SECRET=$(openssl rand -hex 32)
 }
 
+# Configure admin panel path
+configure_admin_path() {
+  echo -e "${BLUE}╔══════════════════════════════════════════════════════════╗${NC}"
+  echo -e "${BLUE}║  🔐 Настройка админ-панели                              ║${NC}"
+  echo -e "${BLUE}╚══════════════════════════════════════════════════════════╝${NC}"
+  echo ""
+  echo -e "${YELLOW}Придумайте секретный URL для доступа к админ-панели${NC}"
+  echo -e "${GRAY}Это будет путь после домена, например: https://domain.com/YOUR_SECRET_PATH${NC}"
+  echo ""
+  echo -e "${CYAN}Рекомендации:${NC}"
+  echo "  • Используйте случайную строку (например: my-secret-admin-xyz123)"
+  echo "  • Минимум 8 символов"
+  echo "  • Только буквы, цифры и дефисы"
+  echo "  • Не используйте очевидные пути (admin, panel, etc.)"
+  echo ""
+  
+  while true; do
+    read -p "Секретный URL для админ-панели: " ADMIN_PATH
+    
+    # Validate input
+    if [[ -z "$ADMIN_PATH" ]]; then
+      echo -e "${RED}❌ URL не может быть пустым${NC}"
+      continue
+    fi
+    
+    if [[ ${#ADMIN_PATH} -lt 8 ]]; then
+      echo -e "${RED}❌ URL должен содержать минимум 8 символов${NC}"
+      continue
+    fi
+    
+    if [[ ! "$ADMIN_PATH" =~ ^[a-zA-Z0-9-]+$ ]]; then
+      echo -e "${RED}❌ URL может содержать только буквы, цифры и дефисы${NC}"
+      continue
+    fi
+    
+    # Check for common/obvious paths
+    if [[ "$ADMIN_PATH" =~ ^(admin|panel|dashboard|manage|control|backend|cms)$ ]]; then
+      echo -e "${YELLOW}⚠️  Этот путь слишком очевидный. Придумайте что-то более уникальное.${NC}"
+      read -p "Продолжить с этим путём? [y/N]: " CONFIRM
+      if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
+        continue
+      fi
+    fi
+    
+    break
+  done
+  
+  echo ""
+  echo -e "${GREEN}✓ Секретный URL: ${ADMIN_PATH}${NC}"
+  echo ""
+}
+
 # Generate docker-compose.yml
 generate_docker_compose() {
   echo -e "${BLUE}📝 Генерация docker-compose.yml...${NC}"
@@ -387,12 +440,13 @@ EOF
 EOF
   fi
 
-  # Add JWT and SSL
+  # Add JWT, SSL, and Admin Path
   cat >> docker-compose.yml << EOF
       - JWT_SECRET=${JWT_SECRET}
       - CORS_ORIGIN=http://frontend
       - SSL_CERT=/app/certs/cert.pem
       - SSL_KEY=/app/certs/key.pem
+      - ADMIN_PANEL_PATH=${ADMIN_PATH}
 EOF
 
   # Add volumes and dependencies
@@ -605,7 +659,7 @@ start_installation() {
   echo -e "  ${BLUE}База данных:${NC} ${DB_TYPE}"
   echo ""
   
-  echo -e "${CYAN}🔐 Первый вход в админ-панель:${NC}"
+  echo -e "${CYAN}🔐 Админ-панель:${NC}"
   echo ""
   
   # Если это локальный домен, показываем инструкцию для /etc/hosts
@@ -616,10 +670,9 @@ start_installation() {
     echo ""
   fi
   
-  echo -e "  1. Откройте ${PROTOCOL}://${DOMAIN}:${PORT}"
-  echo -e "  2. Нажмите на иконку ⚙️ в правом верхнем углу"
-  echo -e "  3. Придумайте уникальный URL для админки"
-  echo -e "  4. Создайте администратора с надежным паролем"
+  echo -e "  ${BLUE}URL админ-панели:${NC} ${PROTOCOL}://${DOMAIN}:${PORT}/${ADMIN_PATH}"
+  echo ""
+  echo -e "  ${YELLOW}⚠️  Сохраните этот URL - он нужен для входа в админ-панель!${NC}"
   echo ""
   
   echo -e "${CYAN}📝 Полезные команды:${NC}"
@@ -646,6 +699,7 @@ main() {
   configure_database
   select_ssl
   configure_port
+  configure_admin_path
   generate_jwt_secret
   generate_docker_compose
   start_installation
