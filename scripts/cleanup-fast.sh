@@ -16,4 +16,10 @@ docker ps -a --filter "name=quickshare" -q | xargs -r docker rm -f 2>/dev/null |
 # Удалить networks
 docker network ls --filter "name=quickshare" -q | xargs -r docker network rm 2>/dev/null || true
 
+# Удалить каталог файлов
+if [ -d "/fileshare_datastore" ]; then
+  echo "🗂️  Удаление каталога файлов..."
+  sudo rm -rf /fileshare_datastore
+fi
+
 echo "✅ Готово!"

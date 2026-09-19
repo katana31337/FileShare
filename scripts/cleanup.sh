@@ -162,7 +162,16 @@ echo ""
 
 if [ "$REMOVE_ALL" = true ]; then
   echo -e "${YELLOW}💡 Все данные QuickShare были удалены${NC}"
+  
+  # Remove file storage directory
+  if [ -d "/fileshare_datastore" ]; then
+    echo ""
+    echo -e "${YELLOW}🗂️  Удаление каталога файлов...${NC}"
+    sudo rm -rf /fileshare_datastore
+    echo -e "${GREEN}✅ Каталог /fileshare_datastore удалён${NC}"
+  fi
 else
   echo -e "${BLUE}💡 Для полной очистки используйте: $0 --all${NC}"
+  echo -e "${BLUE}💡 Файлы хранятся в: /fileshare_datastore${NC}"
 fi
 echo ""
