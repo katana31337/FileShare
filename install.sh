@@ -394,14 +394,16 @@ services:
     container_name: quickshare-frontend
     restart: unless-stopped
     ports:
-      - "${PORT}:80"
+      - "${PORT}:443"
+    volumes:
+      - ./certs:/etc/nginx/certs:ro
     depends_on:
       backend:
         condition: service_healthy
     networks:
       - quickshare_net
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "--no-check-certificate", "https://localhost/health"]
       interval: 30s
       timeout: 10s
       retries: 3
