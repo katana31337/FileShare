@@ -14,7 +14,13 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 CYAN='\033[0;36m'
+GRAY='\033[0;90m'
 NC='\033[0m' # No Color
+
+# Global variables
+DOMAIN=""
+PORT=""
+DB_TYPE=""
 
 # Print banner
 print_banner() {
@@ -594,14 +600,23 @@ start_installation() {
   
   echo -e "${CYAN}📊 Информация о системе:${NC}"
   echo ""
-  echo -e "  ${BLUE}Frontend:${NC}  ${PROTOCOL}://localhost:${PORT}"
-  echo -e "  ${BLUE}Backend:${NC}   ${PROTOCOL}://localhost:${PORT}/api"
+  echo -e "  ${BLUE}Frontend:${NC}  ${PROTOCOL}://${DOMAIN}:${PORT}"
+  echo -e "  ${BLUE}Backend:${NC}   ${PROTOCOL}://${DOMAIN}:${PORT}/api"
   echo -e "  ${BLUE}База данных:${NC} ${DB_TYPE}"
   echo ""
   
   echo -e "${CYAN}🔐 Первый вход в админ-панель:${NC}"
   echo ""
-  echo -e "  1. Откройте ${PROTOCOL}://localhost:${PORT}"
+  
+  # Если это локальный домен, показываем инструкцию для /etc/hosts
+  if [[ "$DOMAIN" =~ \.(local|lan|internal|home)$ ]]; then
+    echo -e "  ${YELLOW}⚠️  Для локального домена добавьте в /etc/hosts:${NC}"
+    echo -e "     ${GRAY}sudo nano /etc/hosts${NC}"
+    echo -e "     ${GRAY}127.0.0.1  ${DOMAIN}${NC}"
+    echo ""
+  fi
+  
+  echo -e "  1. Откройте ${PROTOCOL}://${DOMAIN}:${PORT}"
   echo -e "  2. Нажмите на иконку ⚙️ в правом верхнем углу"
   echo -e "  3. Придумайте уникальный URL для админки"
   echo -e "  4. Создайте администратора с надежным паролем"
