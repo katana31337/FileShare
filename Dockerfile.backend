@@ -28,9 +28,7 @@ COPY server/package.json ./package.json
 RUN npm install --omit=dev --no-audit --no-fund
 COPY --from=builder /app/dist ./dist
 COPY server/healthcheck.js ./healthcheck.js
-RUN mkdir -p /app/data/uploads /app/certs
-COPY server/generate-certs.sh ./generate-certs.sh
-RUN chmod +x ./generate-certs.sh
+RUN mkdir -p /app/data/uploads
 
 # Clean up build dependencies to reduce image size
 RUN apk del python3 make g++

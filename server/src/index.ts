@@ -145,44 +145,24 @@ async function startServer() {
     const certPath = process.env.SSL_CERT || path.join(process.cwd(), 'certs', 'cert.pem');
     const keyPath = process.env.SSL_KEY || path.join(process.cwd(), 'certs', 'key.pem');
 
-    if (fs.existsSync(certPath) && fs.existsSync(keyPath)) {
-      const httpsOptions = {
-        cert: fs.readFileSync(certPath),
-        key: fs.readFileSync(keyPath),
-      };
-
-      const server = https.createServer(httpsOptions, app);
-      server.listen(Number(PORT), HOST, async () => {
-        console.log('');
-        console.log('  🔗 QuickShare Server v2.0');
-        console.log('  ═════════════════════════');
-        console.log(`  🌐 HTTPS: https://${HOST}:${PORT}`);
-        console.log(`  📁 Data:  ${path.join(process.cwd(), 'data')}`);
-        console.log(`  🔒 SSL:   Enabled`);
-        try {
-          const stats = await db.getStats();
-          console.log(`  🗄️  DB:    ${stats.dbType}`);
-        } catch (e) {
-          console.log(`  🗄️  DB:    unknown`);
-        }
-        console.log('');
-      });
-    } else {
-      const server = http.createServer(app);
-      server.listen(Number(PORT), HOST, () => {
-        console.log('');
-        console.log('  🔗 QuickShare Server v2.0');
-        console.log('  ═════════════════════════');
-        console.log(`  🌐 HTTP:  http://${HOST}:${PORT}`);
-        console.log(`  📁 Data:  ${path.join(process.cwd(), 'data')}`);
-        console.log(`  🔒 SSL:   Disabled`);
-        console.log(`  🗄️  DB:    ${dbType}`);
-        console.log('');
-        console.log('  💡 Run ./generate-certs.sh for HTTPS support');
-        console.log('  💡 Use Docker for production deployment');
-        console.log('');
-      });
-    }
+    // Backend always runs on HTTP inside Docker network
+    // SSL termination is handled by Nginx reverse proxy
+    const server = http.createServer(app);
+    server.listen(Number(PORT), HOST, async () => {
+      console.log('');
+      console.log('  🔗 QuickShare Server v2.0');
+      console.log('  ═════════════════════════');
+      console.log(`  🌐 HTTP:  http://${HOST}:${PORT}`);
+      console.log(`  📁 Data:  ${path.join(process.cwd(), 'data')}`);
+      console.log(`  🔒 SSL:   Terminated by Nginx`);
+      try {
+        const stats = await db.getStats();
+        console.log(`  🗄️  DB:    ${stats.dbType}`);
+      } catch (e) {
+        console.log(`  🗄️  DB:    unknown`);
+      }
+      console.log('');
+    });
 
     // Periodic cleanup
     setInterval(async () => {
