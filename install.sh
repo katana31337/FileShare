@@ -136,10 +136,9 @@ select_ssl() {
   echo ""
   echo "  1) Let's Encrypt (для продакшена с доменом)"
   echo "  2) Self-signed сертификат (для разработки/локальной сети)"
-  echo "  3) Без SSL (только HTTP)"
   echo ""
-  read -p "Выберите тип SSL [1-3, по умолчанию: 3]: " SSL_CHOICE
-  SSL_CHOICE=${SSL_CHOICE:-3}
+  read -p "Выберите тип SSL [1-2, по умолчанию: 2]: " SSL_CHOICE
+  SSL_CHOICE=${SSL_CHOICE:-2}
   
   case $SSL_CHOICE in
     1)
@@ -147,12 +146,6 @@ select_ssl() {
       ;;
     2)
       setup_selfsigned
-      ;;
-    3)
-      SSL_ENABLED=false
-      SSL_CERT=""
-      SSL_KEY=""
-      echo -e "${GREEN}✓ SSL отключен${NC}"
       ;;
     *)
       echo -e "${RED}❌ Неверный выбор${NC}"
@@ -219,10 +212,6 @@ setup_letsencrypt() {
   
   chmod 644 ./certs/cert.pem
   chmod 600 ./certs/key.pem
-  
-  SSL_ENABLED=true
-  SSL_CERT="./certs/cert.pem"
-  SSL_KEY="./certs/key.pem"
   
   echo -e "${GREEN}✅ Let's Encrypt сертификат получен${NC}"
   echo ""
@@ -297,10 +286,6 @@ EOF
   chmod 600 ./certs/key.pem
   rm -f ./certs/openssl.cnf
   
-  SSL_ENABLED=true
-  SSL_CERT="./certs/cert.pem"
-  SSL_KEY="./certs/key.pem"
-  
   echo -e "${GREEN}✅ Self-signed сертификат создан${NC}"
   echo ""
   echo -e "${YELLOW}⚠️  Браузеры будут показывать предупреждение безопасности.${NC}"
@@ -314,11 +299,7 @@ configure_port() {
   echo -e "${BLUE}╚══════════════════════════════════════════════════════════╝${NC}"
   echo ""
   
-  if [ "$SSL_ENABLED" = true ]; then
-    DEFAULT_PORT=443
-  else
-    DEFAULT_PORT=80
-  fi
+  DEFAULT_PORT=443
   
   read -p "Порт для frontend [${DEFAULT_PORT}]: " PORT
   PORT=${PORT:-$DEFAULT_PORT}
@@ -342,7 +323,7 @@ generate_docker_compose() {
 # ============================================
 # Generated: $(date)
 # Database: $DB_TYPE
-# SSL: $SSL_ENABLED
+# SSL: Enabled (HTTPS)
 # Port: $PORT
 
 services:
@@ -404,14 +385,9 @@ EOF
   cat >> docker-compose.yml << EOF
       - JWT_SECRET=${JWT_SECRET}
       - CORS_ORIGIN=http://frontend
-EOF
-
-  if [ "$SSL_ENABLED" = true ]; then
-    cat >> docker-compose.yml << EOF
       - SSL_CERT=/app/certs/cert.pem
       - SSL_KEY=/app/certs/key.pem
 EOF
-  fi
 
   # Add volumes and dependencies
   cat >> docker-compose.yml << EOF
@@ -425,11 +401,9 @@ EOF
 EOF
   fi
 
-  if [ "$SSL_ENABLED" = true ]; then
-    cat >> docker-compose.yml << EOF
+  cat >> docker-compose.yml << EOF
       - ./certs:/app/certs:ro
 EOF
-  fi
 
   if [ "$DB_TYPE" != "sqlite" ]; then
     cat >> docker-compose.yml << EOF
@@ -616,11 +590,7 @@ start_installation() {
   echo ""
   
   # Show access information
-  if [ "$SSL_ENABLED" = true ]; then
-    PROTOCOL="https"
-  else
-    PROTOCOL="http"
-  fi
+  PROTOCOL="https"
   
   echo -e "${CYAN}📊 Информация о системе:${NC}"
   echo ""
