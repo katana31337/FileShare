@@ -114,12 +114,22 @@ export class PostgresAdapter implements IDatabaseAdapter {
       ['rate_limit_max', '100', 'network', 'Макс. запросов в окне'],
     ];
 
+    console.log(`📝 Inserting ${defaults.length} default settings...`);
+    
     for (const [key, value, category, description] of defaults) {
-      await this.pool.query(
-        `INSERT INTO settings (key, value, category, description) VALUES ($1, $2, $3, $4) ON CONFLICT (key) DO NOTHING`,
-        [key, value, category, description]
-      );
+      try {
+        await this.pool.query(
+          `INSERT INTO settings (key, value, category, description) VALUES ($1, $2, $3, $4) ON CONFLICT (key) DO NOTHING`,
+          [key, value, category, description]
+        );
+      } catch (error: any) {
+        console.error(`❌ Error inserting setting ${key}:`, error.message);
+      }
     }
+    
+    // Verify settings were inserted
+    const result = await this.pool.query('SELECT COUNT(*) as count FROM settings');
+    console.log(`✅ Total settings in database: ${result.rows[0].count}`);
   }
 
   async createShare(share: Omit<ShareRecord, 'downloads' | 'created_at'>): Promise<ShareRecord> {
