@@ -31,45 +31,17 @@ const requireAuth = (req: Request, res: Response, next: NextFunction): void => {
 // Public routes
 const settingsService = new SettingsService(database);
 
-/**
- * GET /api/admin/public-config — Public site configuration (for frontend)
- */
-router.get('/public-config', async (_req: Request, res: Response) => {
-  try {
-    const siteConfig = await settingsService.getSiteConfig();
-    const limits = await settingsService.getLimits();
-    const security = await settingsService.getSecurityConfig();
-    const adminPanelPath = await settingsService.getOrDefault('admin_panel_path', 'admin');
 
-    res.json({
-      ...siteConfig,
-      limits,
-      security,
-      adminPanelPath,
-    });
-  } catch (error: any) {
-    res.status(500).json({ error: 'SERVER_ERROR', message: error.message });
-  }
-});
 
 /**
  * GET /api/admin/status — Check if admin setup is needed
- * Returns whether admin exists and what the admin panel path is
+ * Returns whether admin exists (does NOT expose adminPanelPath)
  */
 router.get('/status', async (_req: Request, res: Response) => {
   try {
-    const adminPanelPath = await settingsService.getOrDefault('admin_panel_path', 'admin');
-    
     // Check if any admin exists by trying to find one
-    const allSettings = await settingsService.getAll();
-    const adminPathSetting = allSettings.find(s => s.key === 'admin_panel_path');
-    
-    // We need to check if admins exist in the database
-    // Since we don't have a direct method, we'll use a workaround
-    // Try to find any admin - if none exist, setup is needed
     let adminExists = false;
     try {
-      // Use raw database query if available
       const db = database as any;
       if (db.db && db.db.prepare) {
         // SQLite
@@ -95,9 +67,29 @@ router.get('/status', async (_req: Request, res: Response) => {
 
     res.json({
       adminExists,
-      adminPanelPath,
       setupRequired: !adminExists,
+      // Don't expose adminPanelPath here!
     });
+  } catch (error: any) {
+    res.status(500).json({ error: 'SERVER_ERROR', message: error.message });
+  }
+});
+
+/**
+ * GET /api/admin/check-path — Check if path matches admin panel path (public)
+ * Returns true/false without exposing the actual adminPanelPath
+ */
+router.get('/check-path', async (req: Request, res: Response) => {
+  try {
+    const path = req.query.path as string;
+    if (!path) {
+      return res.json({ matches: false });
+    }
+
+    const adminPanelPath = await settingsService.getOrDefault('admin_panel_path', 'admin');
+    const matches = path === adminPanelPath;
+
+    res.json({ matches });
   } catch (error: any) {
     res.status(500).json({ error: 'SERVER_ERROR', message: error.message });
   }
@@ -245,6 +237,30 @@ router.post('/login', async (req: Request, res: Response) => {
 
 // Protected routes
 router.use(requireAuth);
+
+/**
+ * GET /api/admin/config — Admin-only configuration (requires auth)
+ * Returns all settings including sensitive ones
+ */
+router.get('/config', async (_req: Request, res: Response) => {
+  try {
+    const siteConfig = await settingsService.getSiteConfig();
+    const limits = await settingsService.getLimits();
+    const security = await settingsService.getSecurityConfig();
+    const systemConfig = await settingsService.getSystemConfig();
+    const adminPanelPath = await settingsService.getOrDefault('admin_panel_path', 'admin');
+
+    res.json({
+      ...siteConfig,
+      limits,
+      security,
+      system: systemConfig,
+      adminPanelPath,
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: 'SERVER_ERROR', message: error.message });
+  }
+});
 
 /**
  * GET /api/admin/settings — Get all settings

@@ -46,20 +46,13 @@ class ShareService implements ShareServiceInterface {
   }
 
   private async loadLimits(): Promise<void> {
-    try {
-      const config = await apiClient.getPublicConfig();
-      if (config && config.limits) {
-        this.limits = {
-          maxFileSize: config.limits.maxFileSize || this.limits.maxFileSize,
-          maxTextLength: config.limits.maxTextLength || this.limits.maxTextLength,
-        };
-      }
-      if (config && config.security) {
-        this.e2eEnabled = config.security.enableE2EEncryption || false;
-      }
-    } catch {
-      // Use defaults if can't load
-    }
+    // Use hardcoded defaults on frontend
+    // Backend enforces real limits from database
+    this.limits = {
+      maxFileSize: 100 * 1024 * 1024, // 100MB default
+      maxTextLength: 50000,
+    };
+    this.e2eEnabled = false; // Disabled by default
   }
 
   private get backend() {

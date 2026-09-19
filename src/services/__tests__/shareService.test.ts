@@ -261,27 +261,8 @@ describe('ShareService', () => {
   });
 
   describe('getLimits', () => {
-    it('должен возвращать лимиты', async () => {
+    it('должен возвращать захардкоженные лимиты', async () => {
       (apiClient.checkHealth as jest.Mock).mockResolvedValue(true);
-      (apiClient.getPublicConfig as jest.Mock).mockResolvedValue({
-        limits: {
-          maxFileSize: 104857600,
-          maxTextLength: 50000,
-        },
-      });
-
-      await shareService.init();
-      const limits = await shareService.getLimits();
-
-      expect(limits).toEqual({
-        maxFileSize: 104857600,
-        maxTextLength: 50000,
-      });
-    });
-
-    it('должен возвращать лимиты по умолчанию если не удалось загрузить', async () => {
-      (apiClient.checkHealth as jest.Mock).mockResolvedValue(true);
-      (apiClient.getPublicConfig as jest.Mock).mockRejectedValue(new Error('Failed'));
 
       await shareService.init();
       const limits = await shareService.getLimits();
@@ -294,27 +275,8 @@ describe('ShareService', () => {
   });
 
   describe('isE2EEnabled', () => {
-    it('должен возвращать true если E2E включено', async () => {
+    it('должен возвращать false по умолчанию', async () => {
       (apiClient.checkHealth as jest.Mock).mockResolvedValue(true);
-      (apiClient.getPublicConfig as jest.Mock).mockResolvedValue({
-        security: {
-          enableE2EEncryption: true,
-        },
-      });
-
-      await shareService.init();
-      const enabled = await shareService.isE2EEnabled();
-
-      expect(enabled).toBe(true);
-    });
-
-    it('должен возвращать false если E2E выключено', async () => {
-      (apiClient.checkHealth as jest.Mock).mockResolvedValue(true);
-      (apiClient.getPublicConfig as jest.Mock).mockResolvedValue({
-        security: {
-          enableE2EEncryption: false,
-        },
-      });
 
       await shareService.init();
       const enabled = await shareService.isE2EEnabled();

@@ -66,34 +66,37 @@ function App() {
 
   const loadSiteConfig = async () => {
     try {
-      const config = await adminApi.getPublicConfig();
-      if (config && config.name) {
-        setSiteConfig({
-          name: config.name || 'QuickShare',
-          description: config.description || 'Анонимный обмен файлами и текстом',
-          icon: config.icon || '🔗',
-          logoUrl: config.logoUrl || '',
-          primaryColor: config.primaryColor || '#9333ea',
-        });
-        document.title = config.name || 'QuickShare';
-      }
+      // Use hardcoded defaults on frontend
+      // Admin can customize these via admin panel
+      setSiteConfig({
+        name: 'QuickShare',
+        description: 'Анонимный обмен файлами и текстом',
+        icon: '🔗',
+        logoUrl: '',
+        primaryColor: '#9333ea',
+      });
+      document.title = 'QuickShare';
 
-      // Load limits from backend
-      const backendLimits = await shareService.getLimits();
-      setLimits(backendLimits);
+      // Use hardcoded limits on frontend
+      // Backend enforces real limits from database
+      setLimits({
+        maxFileSize: 100 * 1024 * 1024, // 100MB default
+        maxTextLength: 50000,
+      });
 
       // Check admin status
       const adminStatus = await adminApi.getAdminStatus();
       const currentPath = window.location.pathname;
       
-      // If we're on the admin panel URL
-      if (currentPath === `/${adminStatus.adminPanelPath}`) {
-        // If admin setup is required (first time), show setup form
-        if (adminStatus.setupRequired) {
-          setAppState('admin-setup');
-          return;
-        }
+      // If admin setup is required (first time), show setup form
+      if (adminStatus.setupRequired) {
+        setAppState('admin-setup');
+        return;
+      }
 
+      // Check if current path matches admin panel path (secure check)
+      const pathCheck = await adminApi.checkAdminPath(currentPath.slice(1)); // Remove leading slash
+      if (pathCheck.matches) {
         // If admin exists, check authentication
         if (adminApi.isAuthenticated()) {
           setAppState('admin-panel');
@@ -176,8 +179,9 @@ function App() {
 
   const handleAdminLoginSuccess = async () => {
     setAppState('admin-panel');
-    const adminStatus = await adminApi.getAdminStatus();
-    window.history.pushState({}, '', `/${adminStatus.adminPanelPath}`);
+    // Get adminPanelPath from protected endpoint after authentication
+    const adminConfig = await adminApi.getAdminConfig();
+    window.history.pushState({}, '', `/${adminConfig.adminPanelPath}`);
   };
 
   const handleAdminSetupSuccess = (adminPanelPath: string) => {

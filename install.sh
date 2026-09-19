@@ -59,13 +59,13 @@ check_prerequisites() {
 # Select database
 select_database() {
   echo -e "${BLUE}╔══════════════════════════════════════════════════════════╗${NC}"
-  echo -e "${BLUE}║  📊 Выбор базы данных                                   ║${NC}"
+  echo -e "${BLUE}║  🗄️  Выбор базы данных                                   ║${NC}"
   echo -e "${BLUE}╚══════════════════════════════════════════════════════════╝${NC}"
   echo ""
-  echo "  1) PostgreSQL (рекомендуется)"
-  echo "  2) MySQL / MariaDB"
-  echo "  3) MongoDB"
-  echo "  4) SQLite (для разработки)"
+  echo "  1) PostgreSQL (рекомендуется, быстрая установка)"
+  echo "  2) MySQL / MariaDB (быстрая установка)"
+  echo "  3) MongoDB (быстрая установка)"
+  echo "  4) SQLite (требует компиляции нативных модулей, дольше)"
   echo ""
   read -p "Выберите базу данных [1-4, по умолчанию: 1]: " DB_CHOICE
   DB_CHOICE=${DB_CHOICE:-1}
@@ -414,6 +414,22 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.backend
+EOF
+
+  # Add build args for SQLite optimization
+  if [ "$DB_TYPE" = "sqlite" ]; then
+    cat >> docker-compose.yml << EOF
+      args:
+        USE_SQLITE: "true"
+EOF
+  else
+    cat >> docker-compose.yml << EOF
+      args:
+        USE_SQLITE: "false"
+EOF
+  fi
+
+  cat >> docker-compose.yml << EOF
     container_name: quickshare-backend
     restart: unless-stopped
     environment:
@@ -691,8 +707,12 @@ start_installation() {
 main() {
   print_banner
   check_prerequisites
+  
+  # Database selection FIRST (affects build process)
   select_database
   configure_database
+  
+  # Then other configurations
   select_ssl
   configure_port
   configure_admin_path

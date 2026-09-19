@@ -54,7 +54,7 @@ class ShareService {
     this.baseUrl = baseUrl;
   }
 
-  async createShare(input: CreateShareInput): Promise<ShareResponse> {
+  async createShare(input: CreateShareInput, baseUrl?: string): Promise<ShareResponse> {
     const id = shortLinkService.generate();
 
     const expiresAt = input.expiresIn
@@ -79,10 +79,12 @@ class ShareService {
       e2e_encrypted: input.e2eEncrypted || false,
     });
 
+    const finalBaseUrl = baseUrl || this.baseUrl;
+
     return {
       id: record.id,
       shortUrl: `/s/${record.id}`,
-      fullUrl: `${this.baseUrl}/s/${record.id}`,
+      fullUrl: `${finalBaseUrl}/s/${record.id}`,
       expiresAt: record.expires_at,
       createdAt: record.created_at,
     };

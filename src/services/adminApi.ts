@@ -121,14 +121,20 @@ class AdminApiService {
     return this.request('/admin/me');
   }
 
-  async getPublicConfig(): Promise<any> {
-    const response = await fetch(`${API_BASE}/admin/public-config`);
+
+
+  async getAdminStatus(): Promise<{ adminExists: boolean; setupRequired: boolean }> {
+    const response = await fetch(`${API_BASE}/admin/status`);
     return response.json();
   }
 
-  async getAdminStatus(): Promise<{ adminExists: boolean; adminPanelPath: string; setupRequired: boolean }> {
-    const response = await fetch(`${API_BASE}/admin/status`);
+  async checkAdminPath(path: string): Promise<{ matches: boolean }> {
+    const response = await fetch(`${API_BASE}/admin/check-path?path=${encodeURIComponent(path)}`);
     return response.json();
+  }
+
+  async getAdminConfig(): Promise<{ adminPanelPath: string; [key: string]: any }> {
+    return this.request('/admin/config');
   }
 
   async setupAdmin(username: string, password: string, adminPanelPath: string): Promise<any> {
