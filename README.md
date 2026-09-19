@@ -133,6 +133,32 @@ chmod +x install.sh
 docker compose up -d
 ```
 
+### 📁 Хранение файлов
+
+Все загруженные файлы сохраняются в каталоге хоста:
+
+```
+/fileshare_datastore
+```
+
+**Преимущества:**
+- ✅ Файлы доступны напрямую из файловой системы
+- ✅ Легко делать бэкапы
+- ✅ Простой перенос между серверами
+- ✅ Не зависят от Docker volumes
+
+**Управление файлами:**
+```bash
+# Посмотреть загруженные файлы
+ls -la /fileshare_datastore
+
+# Бэкап файлов
+tar -czf backup.tar.gz /fileshare_datastore
+
+# Очистка старых файлов
+find /fileshare_datastore -type f -mtime +30 -delete
+```
+
 ### Разработка:
 
 Frontend и backend можно разрабатывать параллельно:

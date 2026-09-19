@@ -81,6 +81,34 @@
 - ✅ Типы: PascalCase (ShareRecord, AdminUser)
 - ✅ Константы: UPPER_CASE (SALT, ITERATIONS)
 
+### 7. Хранение файлов
+
+#### ✅ Файлы хранятся в каталоге хоста
+- ✅ Каталог: `/fileshare_datastore`
+- ✅ Монтируется в контейнер: `/app/data/uploads`
+- ✅ Создаётся автоматически при установке
+- ✅ Права доступа: `777` (чтение/запись для всех)
+
+**Преимущества:**
+- ✅ Файлы доступны напрямую из файловой системы хоста
+- ✅ Легко делать бэкапы
+- ✅ Простой перенос между серверами
+- ✅ Не зависят от Docker volumes
+
+**Управление:**
+```bash
+# Посмотреть файлы
+ls -la /fileshare_datastore
+
+# Бэкап
+sudo tar -czf backup.tar.gz /fileshare_datastore
+
+# Очистка старых файлов
+sudo find /fileshare_datastore -type f -mtime +30 -delete
+```
+
+Подробная документация: [BACKUP.md](BACKUP.md)
+
 #### ✅ Структура проекта
 ```
 ├── src/                          # Frontend

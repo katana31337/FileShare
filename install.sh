@@ -468,7 +468,7 @@ EOF
   # Add volumes and dependencies
   cat >> docker-compose.yml << EOF
     volumes:
-      - backend_uploads:/app/data/uploads
+      - /fileshare_datastore:/app/data/uploads
 EOF
 
   if [ "$DB_TYPE" = "sqlite" ]; then
@@ -609,6 +609,17 @@ start_installation() {
     exit 1
   fi
   
+  # Create file storage directory
+  echo -e "${BLUE}📁 Создание каталога для хранения файлов...${NC}"
+  if [ ! -d "/fileshare_datastore" ]; then
+    sudo mkdir -p /fileshare_datastore
+    sudo chmod 777 /fileshare_datastore
+    echo -e "${GREEN}✅ Каталог /fileshare_datastore создан${NC}"
+  else
+    echo -e "${GREEN}✅ Каталог /fileshare_datastore уже существует${NC}"
+  fi
+  echo ""
+  
   # Build and start containers with progress
   echo -e "${CYAN}📦 Сборка контейнеров...${NC}"
   echo ""
@@ -669,6 +680,7 @@ start_installation() {
   echo -e "  ${BLUE}Frontend:${NC}  ${PROTOCOL}://${DOMAIN}:${PORT}"
   echo -e "  ${BLUE}Backend:${NC}   ${PROTOCOL}://${DOMAIN}:${PORT}/api"
   echo -e "  ${BLUE}База данных:${NC} ${DB_TYPE}"
+  echo -e "  ${BLUE}Файлы:${NC}      /fileshare_datastore"
   echo ""
   
   echo -e "${CYAN}🔐 Админ-панель:${NC}"
