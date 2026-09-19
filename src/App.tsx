@@ -84,19 +84,21 @@ function App() {
         maxTextLength: 50000,
       });
 
-      // Check admin status
-      const adminStatus = await adminApi.getAdminStatus();
       const currentPath = window.location.pathname;
       
-      // If admin setup is required (first time), show setup form
-      if (adminStatus.setupRequired) {
-        setAppState('admin-setup');
-        return;
-      }
-
       // Check if current path matches admin panel path (secure check)
       const pathCheck = await adminApi.checkAdminPath(currentPath.slice(1)); // Remove leading slash
+      
       if (pathCheck.matches) {
+        // We're on admin URL - check admin status
+        const adminStatus = await adminApi.getAdminStatus();
+        
+        // If admin setup is required (first time), show setup form
+        if (adminStatus.setupRequired) {
+          setAppState('admin-setup');
+          return;
+        }
+        
         // If admin exists, check authentication
         if (adminApi.isAuthenticated()) {
           setAppState('admin-panel');
@@ -105,6 +107,8 @@ function App() {
         }
         return;
       }
+      
+      // Otherwise, show main page (default state)
     } catch {
       // Use defaults if server unavailable
     }
