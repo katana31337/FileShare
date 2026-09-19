@@ -121,10 +121,7 @@ class AdminApiService {
     return this.request('/admin/me');
   }
 
-  async getPublicConfig(): Promise<any> {
-    const response = await fetch(`${API_BASE}/public/config`);
-    return response.json();
-  }
+
 
   async getAdminStatus(): Promise<{ adminExists: boolean; setupRequired: boolean }> {
     const response = await fetch(`${API_BASE}/admin/status`);

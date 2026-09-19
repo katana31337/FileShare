@@ -85,21 +85,7 @@ class ApiClient {
     }
   }
 
-  async getPublicConfig(): Promise<{
-    limits: {
-      maxFileSize: number;
-      maxTextLength: number;
-      defaultExpiry: number;
-      maxDownloadsDefault: number;
-    };
-    security?: {
-      enableE2EEncryption?: boolean;
-    };
-    siteName?: string;
-    siteIcon?: string;
-  }> {
-    return this.request('/public/config');
-  }
+
 }
 
 export const apiClient = new ApiClient();

@@ -31,25 +31,7 @@ const requireAuth = (req: Request, res: Response, next: NextFunction): void => {
 // Public routes
 const settingsService = new SettingsService(database);
 
-/**
- * GET /api/public/config — Public site configuration (for frontend)
- * Returns only non-sensitive settings needed for UI
- */
-router.get('/public/config', async (_req: Request, res: Response) => {
-  try {
-    const siteConfig = await settingsService.getSiteConfig();
-    const limits = await settingsService.getLimits();
 
-    // Return only public-safe settings
-    res.json({
-      ...siteConfig,
-      limits,
-      // Don't expose: adminPanelPath, security settings, internal configs
-    });
-  } catch (error: any) {
-    res.status(500).json({ error: 'SERVER_ERROR', message: error.message });
-  }
-});
 
 /**
  * GET /api/admin/status — Check if admin setup is needed
