@@ -19,12 +19,20 @@
 ┌─────────────┐      ┌─────────────┐      ┌─────────────┐
 │  Frontend   │─────▶│   Backend   │─────▶│  Database   │
 │   (Nginx)   │      │  (Node.js)  │      │ (PostgreSQL)│
-│   Port 80   │      │  Port 3001  │      │  Port 5432  │
+│  Port 443   │ HTTP │  Port 3001  │      │  Port 5432  │
+│  (HTTPS)    │─────▶│   (HTTP)    │      │             │
 └─────────────┘      └─────────────┘      └─────────────┘
      React               Express            Multi-DB
    Static files         REST API           (SQLite/PG/
-   Reverse proxy        JWT Auth            MySQL/Mongo)
+   SSL Termination      JWT Auth            MySQL/Mongo)
+   Reverse proxy
 ```
+
+**SSL Termination на Nginx:**
+- Nginx обрабатывает HTTPS соединения (порт 443)
+- Backend работает на HTTP внутри Docker сети (порт 3001)
+- SSL сертификаты монтируются только в Nginx контейнер
+- Это стандартная практика для микросервисной архитектуры
 
 **Преимущества:**
 - 🚀 **Независимое масштабирование** — можно запустить несколько инстансов backend

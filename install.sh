@@ -442,12 +442,10 @@ EOF
 EOF
   fi
 
-  # Add JWT, SSL, and Admin Path
+  # Add JWT and Admin Path
   cat >> docker-compose.yml << EOF
       - JWT_SECRET=${JWT_SECRET}
       - CORS_ORIGIN=http://frontend
-      - SSL_CERT=/app/certs/cert.pem
-      - SSL_KEY=/app/certs/key.pem
       - ADMIN_PANEL_PATH=${ADMIN_PATH}
 EOF
 
@@ -462,10 +460,6 @@ EOF
       - backend_:/app/data
 EOF
   fi
-
-  cat >> docker-compose.yml << EOF
-      - ./certs:/app/certs:ro
-EOF
 
   if [ "$DB_TYPE" != "sqlite" ]; then
     cat >> docker-compose.yml << EOF

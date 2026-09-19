@@ -1,16 +1,15 @@
 #!/usr/bin/env node
-const https = require('https');
+const http = require('http');
 
 const options = {
   hostname: 'localhost',
   port: 3001,
   path: '/api/health',
   method: 'GET',
-  rejectUnauthorized: false, // Ignore self-signed cert
   timeout: 5000
 };
 
-const req = https.request(options, (res) => {
+const req = http.request(options, (res) => {
   if (res.statusCode === 200) {
     process.exit(0);
   } else {
