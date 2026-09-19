@@ -37,8 +37,7 @@ function App() {
     password: '',
   });
   const { addToHistory } = useShareHistory();
-  const { status, isConnected, isDisconnected, isDegraded } = useConnectionStatus();
-  const isServerOnline = isConnected;
+  const { isConnected, isDisconnected, isDegraded } = useConnectionStatus();
   const [siteConfig, setSiteConfig] = useState<SiteConfig>({
     name: 'QuickShare',
     description: 'Анонимный обмен файлами и текстом',
