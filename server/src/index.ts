@@ -116,6 +116,16 @@ async function startServer() {
     const settingsService = new SettingsService(db);
     await settingsService.loadCache();
 
+    // Set admin panel path from environment variable if provided (first run)
+    const adminPanelPath = process.env.ADMIN_PANEL_PATH;
+    if (adminPanelPath) {
+      const currentPath = await settingsService.get('admin_panel_path');
+      if (!currentPath || currentPath === 'admin') {
+        await settingsService.set('admin_panel_path', adminPanelPath, 'admin', 'URL путь к админ-панели');
+        console.log(`🔐 Admin panel path set to: /${adminPanelPath}`);
+      }
+    }
+
     // Initialize auth service (admin is created via UI setup)
     const authService = new AuthService(db);
 
