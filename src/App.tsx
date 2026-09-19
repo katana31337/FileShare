@@ -86,14 +86,15 @@ function App() {
       const adminStatus = await adminApi.getAdminStatus();
       const currentPath = window.location.pathname;
       
-      // If we're on the admin panel URL
-      if (currentPath === `/${adminStatus.adminPanelPath}`) {
-        // If admin setup is required (first time), show setup form
-        if (adminStatus.setupRequired) {
-          setAppState('admin-setup');
-          return;
-        }
+      // If admin setup is required (first time), show setup form
+      if (adminStatus.setupRequired) {
+        setAppState('admin-setup');
+        return;
+      }
 
+      // Check if current path matches admin panel path (secure check)
+      const pathCheck = await adminApi.checkAdminPath(currentPath.slice(1)); // Remove leading slash
+      if (pathCheck.matches) {
         // If admin exists, check authentication
         if (adminApi.isAuthenticated()) {
           setAppState('admin-panel');
@@ -176,8 +177,9 @@ function App() {
 
   const handleAdminLoginSuccess = async () => {
     setAppState('admin-panel');
-    const adminStatus = await adminApi.getAdminStatus();
-    window.history.pushState({}, '', `/${adminStatus.adminPanelPath}`);
+    // Get adminPanelPath from protected endpoint after authentication
+    const adminConfig = await adminApi.getAdminConfig();
+    window.history.pushState({}, '', `/${adminConfig.adminPanelPath}`);
   };
 
   const handleAdminSetupSuccess = (adminPanelPath: string) => {

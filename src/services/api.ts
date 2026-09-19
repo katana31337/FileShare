@@ -98,7 +98,7 @@ class ApiClient {
     siteName?: string;
     siteIcon?: string;
   }> {
-    return this.request('/admin/public-config');
+    return this.request('/public/config');
   }
 }
 
