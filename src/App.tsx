@@ -26,7 +26,7 @@ interface SiteConfig {
 
 function App() {
   const [appState, setAppState] = useState<AppState>('home');
-  const [shareType, setShareType] = useState<ShareType>('file'); // File is default now
+  const [shareType, setShareType] = useState<ShareType>('file');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [shareResult, setShareResult] = useState<ShareCreateResponse | null>(null);
@@ -46,7 +46,7 @@ function App() {
     primaryColor: '#9333ea',
   });
   const [limits, setLimits] = useState({
-    maxFileSize: 100 * 1024 * 1024, // 100MB default
+    maxFileSize: 100 * 1024 * 1024,
     maxTextLength: 50000,
   });
 
@@ -75,7 +75,6 @@ function App() {
           logoUrl: config.logoUrl || '',
           primaryColor: config.primaryColor || '#9333ea',
         });
-        // Update document title
         document.title = config.name || 'QuickShare';
       }
 
@@ -87,14 +86,15 @@ function App() {
       const adminStatus = await adminApi.getAdminStatus();
       const currentPath = window.location.pathname;
       
-      // If admin setup is required, show setup form
-      if (adminStatus.setupRequired && currentPath === `/${adminStatus.adminPanelPath}`) {
-        setAppState('admin-setup');
-        return;
-      }
-
-      // Check if we're on admin URL
+      // If we're on the admin panel URL
       if (currentPath === `/${adminStatus.adminPanelPath}`) {
+        // If admin setup is required (first time), show setup form
+        if (adminStatus.setupRequired) {
+          setAppState('admin-setup');
+          return;
+        }
+
+        // If admin exists, check authentication
         if (adminApi.isAuthenticated()) {
           setAppState('admin-panel');
         } else {
@@ -258,38 +258,6 @@ function App() {
               }`} />
               {isConnected ? 'Сервер онлайн' : isDegraded ? 'Проблемы' : isDisconnected ? 'Оффлайн' : 'Проверка...'}
             </div>
-
-            {/* Admin button */}
-            <button
-              onClick={async () => {
-                try {
-                  const adminStatus = await adminApi.getAdminStatus();
-                  const adminPath = adminStatus.adminPanelPath || 'admin';
-                  
-                  if (adminStatus.setupRequired) {
-                    setAppState('admin-setup');
-                    window.history.pushState({}, '', `/${adminPath}`);
-                  } else if (adminApi.isAuthenticated()) {
-                    setAppState('admin-panel');
-                    window.history.pushState({}, '', `/${adminPath}`);
-                  } else {
-                    setAppState('admin-login');
-                    window.history.pushState({}, '', `/${adminPath}`);
-                  }
-                } catch {
-                  // Fallback to login if status check fails
-                  setAppState('admin-login');
-                  window.history.pushState({}, '', '/admin');
-                }
-              }}
-              className="p-2 text-gray-400 hover:text-purple-400 transition-colors rounded-lg hover:bg-gray-800/50"
-              title="Панель управления"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-            </button>
           </div>
         </div>
       </header>
