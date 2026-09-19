@@ -31,6 +31,11 @@ router.post('/', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'VALIDATION', message: 'Max downloads must be between 1 and 1000' });
     }
 
+    // Get base URL from request headers
+    const protocol = req.headers['x-forwarded-proto'] || 'https';
+    const host = req.headers['host'] || 'localhost';
+    const baseUrl = `${protocol}://${host}`;
+
     const result = await shareService.createShare({
       type: type || 'text',
       content,
@@ -38,7 +43,7 @@ router.post('/', async (req: Request, res: Response) => {
       maxDownloads: maxDownloads || undefined,
       password: password || undefined,
       e2eEncrypted: e2eEncrypted || false,
-    });
+    }, baseUrl);
 
     res.status(201).json(result);
   } catch (error: any) {
@@ -68,6 +73,11 @@ router.post('/upload', upload.single('file'), async (req: Request, res: Response
     const maxDownloads = req.body.maxDownloads ? parseInt(req.body.maxDownloads) : undefined;
     const password = req.body.password || undefined;
 
+    // Get base URL from request headers
+    const protocol = req.headers['x-forwarded-proto'] || 'https';
+    const host = req.headers['host'] || 'localhost';
+    const baseUrl = `${protocol}://${host}`;
+
     const result = await shareService.createShare({
       type: 'file',
       fileName: req.file.originalname,
@@ -77,7 +87,7 @@ router.post('/upload', upload.single('file'), async (req: Request, res: Response
       expiresIn,
       maxDownloads,
       password,
-    });
+    }, baseUrl);
 
     res.status(201).json(result);
   } catch (error: any) {
